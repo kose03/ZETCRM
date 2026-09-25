@@ -193,7 +193,7 @@
                 <!-- Accounts Preset Helper Note -->
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-500 space-y-1">
                     <p class="font-bold text-slate-700">【初期アカウント情報】</p>
-                    <p>・管理者: ID <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-brand-700">adnini</code> / PW <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-brand-700">adnini</code></p>
+                    <p>・管理者: ID <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-brand-700">admin</code> / PW <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-brand-700">admin</code></p>
                     <p class="text-[10px] text-slate-400">※ログイン後、「管理ツール」→「アカウント管理」から担当者の追加・編集・削除が行えます。</p>
                 </div>
             </div>
@@ -807,7 +807,7 @@
                                             <button @click="openUserEditModal(user)" class="p-1 text-brand-600 hover:bg-brand-50 rounded" title="編集">
                                                 <i data-lucide="edit-3" class="w-4 h-4"></i>
                                             </button>
-                                            <button v-if="user.id !== 'adnini'" @click="deleteUserAccount(user)" class="p-1 text-rose-600 hover:bg-rose-50 rounded" title="削除">
+                                            <button v-if="user.id !== 'admin'" @click="deleteUserAccount(user)" class="p-1 text-rose-600 hover:bg-rose-50 rounded" title="削除">
                                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                                             </button>
                                         </td>
@@ -1059,12 +1059,12 @@
                     const inputId = loginForm.value.id.trim();
                     const inputPw = loginForm.value.password;
 
-                    // Search matching active user from usersList or fallback default adnini
+                    // Search matching active user from usersList or fallback default admin
                     let match = usersList.value.find(u => u.id === inputId && u.pw === inputPw && u.status === '有効');
 
-                    // Default hardcoded Fallback for adnini if not loaded yet
-                    if (!match && inputId === 'adnini' && inputPw === 'adnini') {
-                        match = { id: 'adnini', pw: 'adnini', name: '管理者', role: 'admin', company: '自社', status: '有効' };
+                    // Default hardcoded Fallback for admin if not loaded yet
+                    if (!match && inputId === 'admin' && inputPw === 'admin') {
+                        match = { id: 'admin', pw: 'admin', name: '管理者', role: 'admin', company: '自社', status: '有効' };
                     }
 
                     if (match) {
@@ -1167,16 +1167,16 @@
                             });
 
                             if (fetchedUsers.length === 0) {
-                                // Initialize Default Admin User 'adnini'
+                                // Initialize Default Admin User 'admin'
                                 const defaultAdmin = {
-                                    id: 'adnini',
-                                    pw: 'adnini',
+                                    id: 'admin',
+                                    pw: 'admin',
                                     name: '管理者',
                                     role: 'admin',
                                     company: '自社',
                                     status: '有効'
                                 };
-                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', 'user_adnini'), defaultAdmin);
+                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', 'user_admin'), defaultAdmin);
                             } else {
                                 usersList.value = fetchedUsers;
                             }
@@ -1261,7 +1261,7 @@
                 };
 
                 const deleteUserAccount = async (user) => {
-                    if (user.id === 'adnini') {
+                    if (user.id === 'admin') {
                         showNotification('初期管理者アカウントは削除できません');
                         return;
                     }
@@ -1325,81 +1325,180 @@
                     showNotification('新規案件を作成しました');
                 };
 
-                // Bulk CSV & Excel Import Handling
                 const handleBulkImport = (event) => {
-                    const file = event.target.files[0];
+                    const inputEl = event.target;
+                    const file = inputEl.files ? inputEl.files[0] : null;
                     if (!file) return;
 
                     const fileName = file.name.toLowerCase();
+                    showNotification('ファイルを解析中...');
 
-                    if (fileName.endsWith('.csv')) {
-                        if (typeof Papa === 'undefined') {
-                            showNotification('CSV解析ライブラリが読み込まれていません');
-                            return;
-                        }
-                        Papa.parse(file, {
-                            header: true,
-                            skipEmptyLines: true,
-                            complete: async (results) => {
-                                await processImportedRows(results.data);
+                    const resetInput = () => {
+                        inputEl.value = '';
+                    };
+
+                    try {
+                        if (fileName.endsWith('.csv')) {
+                            if (typeof Papa === 'undefined') {
+                                showNotification('エラー: CSV解析ライブラリ(PapaParse)が読み込まれていません');
+                                resetInput();
+                                return;
                             }
-                        });
-                    } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                        if (typeof XLSX === 'undefined') {
-                            showNotification('Excel解析ライブラリが読み込まれていません');
-                            return;
+                            Papa.parse(file, {
+                                header: true,
+                                skipEmptyLines: 'greedy',
+                                encoding: "UTF-8",
+                                complete: async (results) => {
+                                    try {
+                                        await processImportedRows(results.data);
+                                    } catch (err) {
+                                        console.error("CSV import error:", err);
+                                        showNotification('CSVの取り込み中にエラーが発生しました: ' + err.message);
+                                    } finally {
+                                        resetInput();
+                                    }
+                                },
+                                error: (err) => {
+                                    console.error("PapaParse error:", err);
+                                    showNotification('CSVパースエラー: ' + err.message);
+                                    resetInput();
+                                }
+                            });
+                        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                            if (typeof XLSX === 'undefined') {
+                                showNotification('エラー: Excel解析ライブラリ(SheetJS)が読み込まれていません');
+                                resetInput();
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = async (e) => {
+                                try {
+                                    const data = new Uint8Array(e.target.result);
+                                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                                    const firstSheetName = workbook.SheetNames[0];
+                                    const worksheet = workbook.Sheets[firstSheetName];
+                                    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                                    await processImportedRows(rows);
+                                } catch (err) {
+                                    console.error("Excel import error:", err);
+                                    showNotification('Excel取り込みエラー: ' + err.message);
+                                } finally {
+                                    resetInput();
+                                }
+                            };
+                            reader.onerror = (err) => {
+                                console.error("FileReader error:", err);
+                                showNotification('ファイル読み込み失敗');
+                                resetInput();
+                            };
+                            reader.readAsArrayBuffer(file);
+                        } else {
+                            showNotification('対応していないファイル形式です (.csv, .xlsx, .xls)');
+                            resetInput();
                         }
-                        const reader = new FileReader();
-                        reader.onload = async (e) => {
-                            const data = new Uint8Array(e.target.result);
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            const firstSheet = workbook.SheetNames[0];
-                            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-                            await processImportedRows(rows);
-                        };
-                        reader.readAsArrayBuffer(file);
+                    } catch (e) {
+                        console.error("Bulk import exception:", e);
+                        showNotification('処理中に予期せぬエラーが発生しました');
+                        resetInput();
                     }
+                };
+
+                // Helper to safely get row values with key trimming & flexible matching
+                const getRowValue = (row, keys) => {
+                    for (const key of keys) {
+                        for (const rowKey in row) {
+                            if (rowKey.trim() === key || rowKey.trim().includes(key)) {
+                                const val = row[rowKey];
+                                if (val !== undefined && val !== null) {
+                                    return String(val).trim();
+                                }
+                            }
+                        }
+                    }
+                    return '';
                 };
 
                 const processImportedRows = async (rows) => {
                     if (!rows || rows.length === 0) {
-                        showNotification('有効なデータが見つかりませんでした');
+                        showNotification('有効なデータ列・行が見つかりませんでした');
                         return;
                     }
 
+                    showNotification(`データ取り込み中... (全 ${rows.length} 件)`);
+
+                    let successCount = 0;
+                    let failCount = 0;
+
                     for (let idx = 0; idx < rows.length; idx++) {
                         const row = rows[idx];
-                        const docId = 'cust_' + Date.now() + '_' + idx;
+                        
+                        // Extract values with flexible key lookup
+                        const noVal = getRowValue(row, ['NO', 'no', 'NO (A)', 'No', 'No.']) || String(idx + 1);
+                        const storeNoVal = getRowValue(row, ['店番', 'storeNo', '店番 (B)']);
+                        const mainPhoneVal = getRowValue(row, ['代表番号', 'mainPhone', '代表番号 (C)']);
+                        const storeNameVal = getRowValue(row, ['店名', 'storeName', '店名 (D)']);
+                        const address1Val = getRowValue(row, ['店舗住所1', 'address1', '店舗住所1 (E)']);
+                        const address2Val = getRowValue(row, ['店舗住所2', 'address2', '店舗住所2 (F)']);
+                        const buildingVal = getRowValue(row, ['店舗建物名', 'building', '店舗建物名 (G)']);
+                        const mobilePhoneVal = getRowValue(row, ['店舗携帯番号', 'mobilePhone', '店舗携帯番号 (H)']);
+                        const operationVal = getRowValue(row, ['運営', 'operation', '運営 (I)']);
+                        const remarksVal = getRowValue(row, ['備考欄', 'remarks', '備考欄 (J)', '備考']);
+                        const categoryVal = getRowValue(row, ['カテゴリ', 'category', 'カテゴリ (K)']);
+                        const phonePartnerVal = getRowValue(row, ['電話相手', 'phonePartner', '電話相手 (L)']);
+                        const surveyAssigneeVal = getRowValue(row, ['調査担当', 'surveyAssignee', '調査担当 (M)']);
+                        const surveyDateVal = getRowValue(row, ['調査日', 'surveyDate', '調査日 (N)']);
+                        const replaceRequestDateVal = getRowValue(row, ['置き換え依頼', 'replaceRequestDate', '置き換え依頼 (P)']);
+                        const productArrangeDateVal = getRowValue(row, ['商品手配', 'productArrangeDate', '商品手配 (Q)']);
+                        const workAssigneeVal = getRowValue(row, ['作業担当', 'workAssignee', '作業担当 (R)']);
+                        const scheduleNoticeDateVal = getRowValue(row, ['日程連絡', 'scheduleNoticeDate', '日程連絡 (S)']);
+                        const completionDateVal = getRowValue(row, ['完了', 'completionDate', '完了 (T)', '完了日']);
+
+                        // Skip completely empty rows
+                        if (!storeNameVal && !noVal && !mobilePhoneVal && !storeNoVal) continue;
+
+                        const docId = 'cust_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 4);
                         const itemData = {
                             id: docId,
-                            no: String(row['NO'] || row['no'] || row['NO (A)'] || (idx + 1)),
-                            storeNo: String(row['店番'] || row['storeNo'] || row['店番 (B)'] || ''),
-                            mainPhone: String(row['代表番号'] || row['mainPhone'] || row['代表番号 (C)'] || ''),
-                            storeName: String(row['店名'] || row['storeName'] || row['店名 (D)'] || ''),
-                            address1: String(row['店舗住所1'] || row['address1'] || row['店舗住所1 (E)'] || ''),
-                            address2: String(row['店舗住所2'] || row['address2'] || row['店舗住所2 (F)'] || ''),
-                            building: String(row['店舗建物名'] || row['building'] || row['店舗建物名 (G)'] || ''),
-                            mobilePhone: String(row['店舗携帯番号'] || row['mobilePhone'] || row['店舗携帯番号 (H)'] || ''),
-                            operation: String(row['運営'] || row['operation'] || row['運営 (I)'] || ''),
-                            remarks: String(row['備考欄'] || row['remarks'] || row['備考欄 (J)'] || ''),
-                            category: String(row['カテゴリ'] || row['category'] || row['カテゴリ (K)'] || ''),
-                            phonePartner: String(row['電話相手'] || row['phonePartner'] || row['電話相手 (L)'] || ''),
-                            surveyAssignee: String(row['調査担当'] || row['surveyAssignee'] || row['調査担当 (M)'] || ''),
-                            surveyDate: String(row['調査日'] || row['surveyDate'] || row['調査日 (N)'] || ''),
+                            no: noVal,
+                            storeNo: storeNoVal,
+                            mainPhone: mainPhoneVal,
+                            storeName: storeNameVal || '未命名店舗',
+                            address1: address1Val,
+                            address2: address2Val,
+                            building: buildingVal,
+                            mobilePhone: mobilePhoneVal,
+                            operation: operationVal,
+                            remarks: remarksVal,
+                            category: categoryVal,
+                            phonePartner: phonePartnerVal,
+                            surveyAssignee: surveyAssigneeVal,
+                            surveyDate: surveyDateVal,
                             surveyDocs: [],
-                            replaceRequestDate: String(row['置き換え依頼'] || row['replaceRequestDate'] || row['置き換え依頼 (P)'] || ''),
-                            productArrangeDate: String(row['商品手配'] || row['productArrangeDate'] || row['商品手配 (Q)'] || ''),
-                            workAssignee: String(row['作業担当'] || row['workAssignee'] || row['作業担当 (R)'] || ''),
-                            scheduleNoticeDate: String(row['日程連絡'] || row['scheduleNoticeDate'] || row['日程連絡 (S)'] || ''),
-                            completionDate: String(row['完了'] || row['completionDate'] || row['完了 (T)'] || '')
+                            replaceRequestDate: replaceRequestDateVal,
+                            productArrangeDate: productArrangeDateVal,
+                            workAssignee: workAssigneeVal,
+                            scheduleNoticeDate: scheduleNoticeDateVal,
+                            completionDate: completionDateVal,
+                            updatedAt: new Date().toISOString()
                         };
 
-                        const itemDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', docId);
-                        await setDoc(itemDocRef, itemData);
+                        try {
+                            const itemDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', docId);
+                            await setDoc(itemDocRef, itemData);
+                            successCount++;
+                        } catch (err) {
+                            console.error(`Row ${idx} import failed:`, err);
+                            failCount++;
+                        }
                     }
 
-                    await addAuditLog('一括インポート', `${rows.length} 件のデータが一括インポートされました。`);
-                    showNotification(`${rows.length} 件のデータを一括インポートしました`);
+                    await addAuditLog('一括インポート', `${successCount} 件のデータをインポートしました (失敗: ${failCount} 件)`);
+                    
+                    if (failCount > 0) {
+                        showNotification(`${successCount} 件成功、${failCount} 件失敗しました (Firestore権限またはネットワークを確認してください)`);
+                    } else {
+                        showNotification(`${successCount} 件のデータを一括インポートしました`);
+                    }
                     showAdminToolModal.value = false;
                 };
 
