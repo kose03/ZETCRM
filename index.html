@@ -710,6 +710,204 @@
                     </div>
                 </div>
             </section>
+
+            <!-- 3. FIELD REPORT SCREEN (画面3: 作業担当報告 - スマホ最適化) -->
+            <section v-if="currentTab === 'field' && canAccessTab('field')" class="space-y-5 max-w-3xl mx-auto">
+                <!-- Worker Switcher Header Banner -->
+                <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-emerald-500 text-slate-900 p-2.5 rounded-xl font-bold">
+                            <i data-lucide="hard-hat" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-medium block">作業担当（現場用モバイル表示）</span>
+                            <div class="flex items-center space-x-2">
+                                <label class="text-xs font-bold text-slate-300 whitespace-nowrap">担当者:</label>
+                                <select 
+                                    v-model="currentWorker" 
+                                    class="bg-slate-800 text-white font-bold text-sm px-3 py-1 rounded-lg border border-slate-700 focus:ring-2 focus:ring-brand-500">
+                                    <option v-for="worker in workerList" :key="worker" :value="worker">{{ worker }}</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between sm:justify-end space-x-3 border-t border-slate-800 sm:border-t-0 pt-2 sm:pt-0">
+                        <div class="text-right">
+                            <span class="text-[10px] text-slate-400 block">担当案件数</span>
+                            <span class="text-lg font-bold text-emerald-400">{{ myWorkItems.length }} <span class="text-xs font-normal text-slate-300">件</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Work Items Card List (Optimized for Mobile Touch & Tap) -->
+                <div class="space-y-4">
+                    <div 
+                        v-for="item in myWorkItems" 
+                        :key="item.id" 
+                        class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden">
+                        
+                        <!-- Card Header -->
+                        <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-start justify-between">
+                            <div class="space-y-1">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-mono bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-bold">NO.{{ item.no }}</span>
+                                    <span class="text-xs font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded" v-if="item.storeNo">店番: {{ item.storeNo }}</span>
+                                    <span class="text-[11px] bg-brand-100 text-brand-700 font-medium px-2 py-0.5 rounded-full">{{ item.category || 'カテゴリ未設定' }}</span>
+                                </div>
+                                <h3 class="text-lg font-bold text-slate-800 leading-snug">{{ item.storeName || '未命名店舗' }}</h3>
+                            </div>
+                            <span :class="getStatusBadgeClass(calculateStatus(item))" class="text-xs px-2.5 py-1 rounded-full font-semibold whitespace-nowrap">
+                                {{ calculateStatus(item) }}
+                            </span>
+                        </div>
+
+                        <!-- Card Body (Location, Phone & Quick Actions) -->
+                        <div class="p-4 space-y-4">
+                            <!-- Quick Action Buttons (Call & Map) -->
+                            <div class="grid grid-cols-2 gap-2">
+                                <a 
+                                    v-if="item.mobilePhone" 
+                                    :href="'tel:' + item.mobilePhone" 
+                                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center space-x-2 shadow-sm transition active:scale-[0.98]">
+                                    <i data-lucide="phone-call" class="w-4 h-4"></i>
+                                    <span>電話をかける</span>
+                                </a>
+                                <div v-else class="bg-slate-100 text-slate-400 font-medium text-xs py-2.5 px-3 rounded-xl text-center">
+                                    電話番号未登録
+                                </div>
+
+                                <a 
+                                    v-if="item.address1" 
+                                    :href="'https://maps.google.com/?q=' + encodeURIComponent(item.address1 + ' ' + (item.address2 || '') + ' ' + (item.building || ''))" 
+                                    target="_blank" 
+                                    class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center space-x-2 shadow-sm transition active:scale-[0.98]">
+                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
+                                    <span>地図を見る</span>
+                                </a>
+                                <div v-else class="bg-slate-100 text-slate-400 font-medium text-xs py-2.5 px-3 rounded-xl text-center">
+                                    住所未登録
+                                </div>
+                            </div>
+
+                            <!-- Detailed Address & Contact Info -->
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-700">
+                                <p class="flex items-start">
+                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0 mt-0.5"></i>
+                                    <span>{{ item.address1 }} {{ item.address2 }} {{ item.building }}</span>
+                                </p>
+                                <p v-if="item.phonePartner" class="flex items-center text-slate-600">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0"></i>
+                                    <span>現地担当者: <strong>{{ item.phonePartner }}</strong></span>
+                                </p>
+                            </div>
+
+                            <!-- Remarks / Field Note -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
+                                    <span>現地作業メモ・連絡事項 (J)</span>
+                                    <span class="text-[10px] text-slate-400">リアルタイム自動保存</span>
+                                </label>
+                                <textarea 
+                                    v-model="item.remarks" 
+                                    @blur="saveItemToFirestore(item)"
+                                    rows="2" 
+                                    placeholder="作業内容、特記事項を入力..." 
+                                    class="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                </textarea>
+                            </div>
+
+                            <!-- Field Photo Upload (Up to 20 images) -->
+                            <div class="bg-brand-50/60 p-3 rounded-xl border border-brand-200 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-brand-900 flex items-center space-x-1">
+                                        <i data-lucide="camera" class="w-4 h-4 text-brand-600"></i>
+                                        <span>現地写真・調査資料 (最大20枚)</span>
+                                    </span>
+                                    <span class="text-[10px] text-brand-700 font-semibold">{{ (item.surveyDocs || []).length }} / 20 枚</span>
+                                </div>
+
+                                <input 
+                                    type="file" 
+                                    multiple 
+                                    accept="image/*,.pdf"
+                                    @change="handleFileUpload($event, item)" 
+                                    class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-brand-600 file:text-white hover:file:bg-brand-700">
+
+                                <!-- Uploaded Photo Thumbnails List -->
+                                <div v-if="item.surveyDocs && item.surveyDocs.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                                    <div 
+                                        v-for="(doc, idx) in item.surveyDocs" 
+                                        :key="idx" 
+                                        class="bg-white p-2 rounded-lg border border-slate-200 flex items-center justify-between text-xs space-x-1">
+                                        <a :href="doc.url" target="_blank" class="truncate font-medium text-brand-600 underline text-[11px] flex-1">
+                                            {{ doc.name }}
+                                        </a>
+                                        <button @click="removeFile(item, idx)" class="text-rose-500 p-1 hover:bg-rose-50 rounded">
+                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Key Schedule Inputs (Mobile Compact Layout) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-slate-100">
+                                <div>
+                                    <label class="block font-medium text-slate-600 mb-1">調査日時 (N)</label>
+                                    <input 
+                                        v-model="item.surveyDate" 
+                                        @change="saveItemToFirestore(item)"
+                                        type="datetime-local" 
+                                        class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
+                                </div>
+                                <div>
+                                    <label class="block font-medium text-slate-600 mb-1">日程連絡日 (S)</label>
+                                    <input 
+                                        v-model="item.scheduleNoticeDate" 
+                                        @change="saveItemToFirestore(item)"
+                                        type="datetime-local" 
+                                        class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
+                                </div>
+                                <div class="sm:col-span-2">
+                                    <label class="block font-bold text-emerald-800 mb-1">作業完了日時 (T)</label>
+                                    <input 
+                                        v-model="item.completionDate" 
+                                        @change="saveItemToFirestore(item)"
+                                        type="datetime-local" 
+                                        class="w-full p-2 border border-emerald-400 bg-emerald-50 rounded-lg text-xs font-bold text-emerald-900">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Footer Action Toolbar -->
+                        <div class="p-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-2">
+                            <button 
+                                @click="toggleCompletion(item)" 
+                                :class="item.completionDate ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'"
+                                class="flex-1 text-white text-xs py-2.5 rounded-xl font-bold transition flex items-center justify-center space-x-1.5 shadow-sm active:scale-[0.98]">
+                                <i :data-lucide="item.completionDate ? 'rotate-ccw' : 'check-circle'" class="w-4 h-4"></i>
+                                <span>{{ item.completionDate ? '完了状態を取り消す' : '作業完了を報告する' }}</span>
+                            </button>
+
+                            <!-- LINE Share Quick Button -->
+                            <a 
+                                :href="'https://line.me/R/msg/text/?' + encodeURIComponent('【作業報告】\n店舗名: ' + (item.storeName || '') + '\nNO.' + item.no + '\nステータス: ' + calculateStatus(item) + '\n完了日時: ' + (item.completionDate || '未完了'))" 
+                                target="_blank" 
+                                class="bg-line hover:opacity-90 text-white font-bold text-xs px-3 py-2.5 rounded-xl flex items-center justify-center space-x-1 shadow-sm transition active:scale-[0.98]"
+                                title="LINEで現場報告を共有">
+                                <i data-lucide="share-2" class="w-4 h-4"></i>
+                                <span class="hidden sm:inline">LINE共有</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Empty State for Worker -->
+                    <div v-if="myWorkItems.length === 0" class="bg-white p-10 rounded-2xl border border-slate-200 text-center text-slate-400 space-y-3">
+                        <i data-lucide="hard-hat" class="w-12 h-12 mx-auto text-slate-300"></i>
+                        <p class="font-bold text-slate-700">現在割り振られた作業案件はありません</p>
+                        <p class="text-xs text-slate-400">ヘッダーの担当者を切り替えるか、コール画面で作業担当をアサインしてください。</p>
+                    </div>
+                </div>
+            </section>
         </main>
 
         <!-- ADMIN TOOL MODAL (With CSV/Excel Import, User Management, Audit Logs) -->
