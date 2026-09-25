@@ -75,8 +75,8 @@
                     <div>
                         <h1 class="font-bold text-lg leading-tight">顧客・工程進捗管理 CRM</h1>
                         <p class="text-xs text-slate-400 flex items-center space-x-1">
-                            <span class="w-2 h-2 rounded-full" :class="isCloudConnected ? 'bg-emerald-400' : 'bg-amber-400'"></span>
-                            <span>{{ isCloudConnected ? 'クラウドリアルタイム同期中 (Firestore)' : 'オフライン/接続中...' }}</span>
+                            <span class="w-2 h-2 rounded-full" :class="isCloudConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'"></span>
+                            <span>{{ isCloudConnected ? 'クラウドリアルタイム同期中 (Firestore)' : 'ローカル動作中（クラウド再接続中）' }}</span>
                         </p>
                     </div>
                 </div>
@@ -708,6 +708,10 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </section>
+        </main>
+
         <!-- ADMIN TOOL MODAL (With CSV/Excel Import, User Management, Audit Logs) -->
         <div v-if="showAdminToolModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative space-y-5 max-h-[90vh] flex flex-col">
@@ -1115,14 +1119,24 @@
                     return false;
                 };
 
+                // 日付・日時文字列として妥当かチェック（誤インポートされた単なる数値「1」「10」等を除外）
+                const isValidDate = (val) => {
+                    if (!val) return false;
+                    const str = String(val).trim();
+                    if (!str) return false;
+                    // 単なる数字のみ（例: "1", "10", "100"など）は日付データではないため無視
+                    if (/^\d+$/.test(str)) return false;
+                    return true;
+                };
+
                 // Dynamic Status Calculation Logic
                 const calculateStatus = (item) => {
                     if (!item) return '未対応';
-                    if (item.completionDate) return '完了';
-                    if (item.scheduleNoticeDate || item.workAssignee) return '作業日時確定';
-                    if (item.productArrangeDate || item.replaceRequestDate) return '置き換え手配済';
+                    if (isValidDate(item.completionDate)) return '完了';
+                    if (isValidDate(item.scheduleNoticeDate) || item.workAssignee) return '作業日時確定';
+                    if (isValidDate(item.productArrangeDate) || isValidDate(item.replaceRequestDate)) return '置き換え手配済';
                     if (item.surveyDocs && item.surveyDocs.length > 0) return '資料回収完了';
-                    if (item.surveyDate) return '調査日時確定';
+                    if (isValidDate(item.surveyDate)) return '調査日時確定';
                     if (item.phonePartner) return '電話対応中';
                     return '未対応';
                 };
@@ -1143,7 +1157,9 @@
                             snapshot.forEach((doc) => {
                                 fetched.push({ id: doc.id, ...doc.data() });
                             });
-                            items.value = fetched.sort((a, b) => parseInt(a.no || 0) - parseInt(b.no || 0));
+                            if (fetched.length > 0) {
+                                items.value = fetched.sort((a, b) => parseInt(a.no || 0) - parseInt(b.no || 0));
+                            }
                             isCloudConnected.value = true;
 
                             if (selectedItem.value) {
@@ -1156,7 +1172,10 @@
                             if (currentTab.value === 'dashboard') {
                                 nextTick(() => initStatusChart());
                             }
-                        }, (err) => console.error("Firestore customers sync error:", err));
+                        }, (err) => {
+                            console.warn("Firestore customers sync warning:", err);
+                            isCloudConnected.value = false;
+                        });
 
                         // 2. Users Collection Sync
                         const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
@@ -1167,7 +1186,6 @@
                             });
 
                             if (fetchedUsers.length === 0) {
-                                // Initialize Default Admin User 'admin'
                                 const defaultAdmin = {
                                     id: 'admin',
                                     pw: 'admin',
@@ -1176,11 +1194,13 @@
                                     company: '自社',
                                     status: '有効'
                                 };
-                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', 'user_admin'), defaultAdmin);
+                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', 'user_admin'), defaultAdmin).catch(() => {});
                             } else {
                                 usersList.value = fetchedUsers;
                             }
-                        }, (err) => console.error("Firestore users sync error:", err));
+                        }, (err) => {
+                            console.warn("Firestore users sync warning:", err);
+                        });
 
                         // 3. Audit Logs Collection Sync
                         const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
@@ -1189,12 +1209,13 @@
                             snapshot.forEach((doc) => {
                                 fetchedLogs.push({ id: doc.id, ...doc.data() });
                             });
-                            // Sort by timestamp desc
                             logsList.value = fetchedLogs.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, 100);
-                        }, (err) => console.error("Firestore logs sync error:", err));
+                        }, (err) => {
+                            console.warn("Firestore logs sync warning:", err);
+                        });
 
                     } catch (e) {
-                        console.error("Auth / Firestore Init Error:", e);
+                        console.warn("Auth / Firestore Init Error (running in local fallback mode):", e);
                         isCloudConnected.value = false;
                     }
                 };
@@ -1218,7 +1239,7 @@
                         const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
                         await addDoc(logsRef, logData);
                     } catch (err) {
-                        console.error("Failed to record audit log:", err);
+                        console.warn("Failed to record audit log to cloud:", err);
                     }
                 };
 
@@ -1279,16 +1300,25 @@
 
                 const saveItemToFirestore = async (item) => {
                     if (!item || !item.id) return;
+                    
+                    // Update local state immediately
+                    const idx = items.value.findIndex(i => i.id === item.id);
+                    if (idx !== -1) {
+                        items.value[idx] = { ...item };
+                    } else {
+                        items.value.push({ ...item });
+                    }
+
                     try {
                         const itemDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', item.id);
                         const plainItem = JSON.parse(JSON.stringify(item));
                         await setDoc(itemDocRef, { ...plainItem, updatedAt: new Date().toISOString() }, { merge: true });
-                        
+                        isCloudConnected.value = true;
                         await addAuditLog('案件データ更新', `NO.${item.no} (${item.storeName || '未命名'}) の情報を更新・保存しました。`);
-                        showNotification('クラウドに更新を保存しました');
+                        showNotification('クラウドおよびローカルに保存しました');
                     } catch (e) {
-                        console.error("Error saving to Firestore:", e);
-                        showNotification('保存エラーが発生しました');
+                        console.warn("Cloud save error, saved to local state:", e);
+                        showNotification('ローカル状態を更新しました');
                     }
                 };
 
@@ -1323,6 +1353,27 @@
                     selectedItem.value = newItem;
                     await addAuditLog('新規案件作成', `NO.${newNo} を新規作成しました。`);
                     showNotification('新規案件を作成しました');
+                };
+
+                const confirmClearAllData = async () => {
+                    if (confirm('本当に全ての案件データを初期化・削除しますか？この操作は取り消せません。')) {
+                        try {
+                            const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'customers'));
+                            const deletePromises = [];
+                            querySnapshot.forEach((docSnap) => {
+                                deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'customers', docSnap.id)));
+                            });
+                            await Promise.all(deletePromises);
+                            items.value = [];
+                            selectedItem.value = null;
+                            await addAuditLog('全データ削除', '管理者が全顧客データを初期化しました。');
+                            showNotification('全てのデータを削除しました');
+                            showAdminToolModal.value = false;
+                        } catch (err) {
+                            console.error("Clear error:", err);
+                            showNotification('データ削除中にエラーが発生しました');
+                        }
+                    }
                 };
 
                 const handleBulkImport = (event) => {
@@ -1426,35 +1477,66 @@
 
                     showNotification(`データ取り込み中... (全 ${rows.length} 件)`);
 
+                    const importedItems = [];
                     let successCount = 0;
-                    let failCount = 0;
 
                     for (let idx = 0; idx < rows.length; idx++) {
                         const row = rows[idx];
                         
-                        // Extract values with flexible key lookup
-                        const noVal = getRowValue(row, ['NO', 'no', 'NO (A)', 'No', 'No.']) || String(idx + 1);
-                        const storeNoVal = getRowValue(row, ['店番', 'storeNo', '店番 (B)']);
-                        const mainPhoneVal = getRowValue(row, ['代表番号', 'mainPhone', '代表番号 (C)']);
-                        const storeNameVal = getRowValue(row, ['店名', 'storeName', '店名 (D)']);
-                        const address1Val = getRowValue(row, ['店舗住所1', 'address1', '店舗住所1 (E)']);
-                        const address2Val = getRowValue(row, ['店舗住所2', 'address2', '店舗住所2 (F)']);
-                        const buildingVal = getRowValue(row, ['店舗建物名', 'building', '店舗建物名 (G)']);
-                        const mobilePhoneVal = getRowValue(row, ['店舗携帯番号', 'mobilePhone', '店舗携帯番号 (H)']);
-                        const operationVal = getRowValue(row, ['運営', 'operation', '運営 (I)']);
-                        const remarksVal = getRowValue(row, ['備考欄', 'remarks', '備考欄 (J)', '備考']);
-                        const categoryVal = getRowValue(row, ['カテゴリ', 'category', 'カテゴリ (K)']);
-                        const phonePartnerVal = getRowValue(row, ['電話相手', 'phonePartner', '電話相手 (L)']);
-                        const surveyAssigneeVal = getRowValue(row, ['調査担当', 'surveyAssignee', '調査担当 (M)']);
-                        const surveyDateVal = getRowValue(row, ['調査日', 'surveyDate', '調査日 (N)']);
-                        const replaceRequestDateVal = getRowValue(row, ['置き換え依頼', 'replaceRequestDate', '置き換え依頼 (P)']);
-                        const productArrangeDateVal = getRowValue(row, ['商品手配', 'productArrangeDate', '商品手配 (Q)']);
-                        const workAssigneeVal = getRowValue(row, ['作業担当', 'workAssignee', '作業担当 (R)']);
-                        const scheduleNoticeDateVal = getRowValue(row, ['日程連絡', 'scheduleNoticeDate', '日程連絡 (S)']);
-                        const completionDateVal = getRowValue(row, ['完了', 'completionDate', '完了 (T)', '完了日']);
+                        // Robust key matching with priority (prevents single-letter keys like 'N' or 'S' from matching 'No')
+                        const getRowValue = (keys) => {
+                            // 1st Pass: Exact Match First
+                            for (const key of keys) {
+                                for (const rowKey in row) {
+                                    const cleanRowKey = rowKey.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
+                                    const cleanKey = key.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
+                                    if (cleanRowKey === cleanKey) {
+                                        const val = row[rowKey];
+                                        if (val !== undefined && val !== null && val !== '') {
+                                            return String(val).trim();
+                                        }
+                                    }
+                                }
+                            }
+                            // 2nd Pass: Partial Match (Only for keys longer than 1 character to avoid 'No' matching 'n' or 's')
+                            for (const key of keys) {
+                                const cleanKey = key.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
+                                if (cleanKey.length <= 1) continue; // Skip single letter matching in partial search
 
-                        // Skip completely empty rows
-                        if (!storeNameVal && !noVal && !mobilePhoneVal && !storeNoVal) continue;
+                                for (const rowKey in row) {
+                                    const cleanRowKey = rowKey.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
+                                    if (cleanRowKey.includes(cleanKey)) {
+                                        const val = row[rowKey];
+                                        if (val !== undefined && val !== null && val !== '') {
+                                            return String(val).trim();
+                                        }
+                                    }
+                                }
+                            }
+                            return '';
+                        };
+
+                        const noVal = getRowValue(['no', '項番', '番号', 'A']) || String(items.value.length + idx + 1);
+                        const storeNoVal = getRowValue(['店番', '店舗番号', 'storeNo', 'B']);
+                        const mainPhoneVal = getRowValue(['代表番号', '電話番号', 'mainPhone', 'C']);
+                        const storeNameVal = getRowValue(['店名', '店舗名', 'storeName', 'D']);
+                        const address1Val = getRowValue(['店舗住所1', '住所1', 'address1', 'E']);
+                        const address2Val = getRowValue(['店舗住所2', '住所2', 'address2', 'F']);
+                        const buildingVal = getRowValue(['店舗建物名', '建物', 'building', 'G']);
+                        const mobilePhoneVal = getRowValue(['店舗携帯番号', '携帯番号', '携帯', 'mobilePhone', 'H']);
+                        const operationVal = getRowValue(['運営', 'operation', 'I']);
+                        const remarksVal = getRowValue(['備考欄', '備考', 'remarks', 'J']);
+                        const categoryVal = getRowValue(['カテゴリ', 'category', 'K']);
+                        const phonePartnerVal = getRowValue(['電話相手', 'phonePartner', 'L']);
+                        const surveyAssigneeVal = getRowValue(['調査担当', 'surveyAssignee', 'M']);
+                        const surveyDateVal = getRowValue(['調査日', 'surveyDate', 'N']);
+                        const replaceRequestDateVal = getRowValue(['置き換え依頼', 'replaceRequestDate', 'P']);
+                        const productArrangeDateVal = getRowValue(['商品手配', 'productArrangeDate', 'Q']);
+                        const workAssigneeVal = getRowValue(['作業担当', 'workAssignee', 'R']);
+                        const scheduleNoticeDateVal = getRowValue(['日程連絡', 'scheduleNoticeDate', 'S']);
+                        const completionDateVal = getRowValue(['完了', 'completionDate', '完了日', 'T']);
+
+                        if (!storeNameVal && !noVal && !mobilePhoneVal && !storeNoVal && !address1Val) continue;
 
                         const docId = 'cust_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 4);
                         const itemData = {
@@ -1482,37 +1564,31 @@
                             updatedAt: new Date().toISOString()
                         };
 
+                        importedItems.push(itemData);
+                        successCount++;
+
+                        // Attempt cloud save asynchronously without blocking UI update
                         try {
                             const itemDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', docId);
-                            await setDoc(itemDocRef, itemData);
-                            successCount++;
-                        } catch (err) {
-                            console.error(`Row ${idx} import failed:`, err);
-                            failCount++;
-                        }
+                            setDoc(itemDocRef, itemData).catch((err) => {
+                                console.warn("Firestore save background notice:", err);
+                            });
+                        } catch (err) {}
                     }
 
-                    await addAuditLog('一括インポート', `${successCount} 件のデータをインポートしました (失敗: ${failCount} 件)`);
-                    
-                    if (failCount > 0) {
-                        showNotification(`${successCount} 件成功、${failCount} 件失敗しました (Firestore権限またはネットワークを確認してください)`);
-                    } else {
-                        showNotification(`${successCount} 件のデータを一括インポートしました`);
+                    // Directly update local items array so imported rows render immediately
+                    items.value = [...items.value, ...importedItems].sort((a, b) => parseInt(a.no || 0) - parseInt(b.no || 0));
+
+                    if (importedItems.length > 0 && !selectedItem.value) {
+                        selectedItem.value = importedItems[0];
                     }
+
+                    await addAuditLog('一括インポート', `${successCount} 件のデータをインポートしました`);
+                    showNotification(`${successCount} 件のデータをインポート完了しました！`);
                     showAdminToolModal.value = false;
-                };
 
-                const confirmClearAllData = async () => {
-                    if (confirm('本当にすべての案件データを削除しますか？この操作は取り消せません。')) {
-                        const snapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'customers'));
-                        for (const d of snapshot.docs) {
-                            await deleteDoc(d.ref);
-                        }
-                        items.value = [];
-                        selectedItem.value = null;
-                        await addAuditLog('データ全削除', 'すべての案件データを初期化・削除しました。');
-                        showNotification('全データを削除しました');
-                        showAdminToolModal.value = false;
+                    if (currentTab.value === 'dashboard') {
+                        nextTick(() => initStatusChart());
                     }
                 };
 
@@ -1533,8 +1609,18 @@
 
                 const sortedItems = computed(() => {
                     return [...filteredItems.value].sort((a, b) => {
-                        let valA = a[sortKey.value] || '';
-                        let valB = b[sortKey.value] || '';
+                        let valA = a[sortKey.value] ?? '';
+                        let valB = b[sortKey.value] ?? '';
+
+                        // 数値（NO列・店番列等）の場合は数値ソートを行う
+                        const numA = parseFloat(valA);
+                        const numB = parseFloat(valB);
+                        const isNumA = !isNaN(numA) && String(numA) === String(valA).trim();
+                        const isNumB = !isNaN(numB) && String(numB) === String(valB).trim();
+
+                        if (isNumA && isNumB) {
+                            return sortOrder.value === 'asc' ? numA - numB : numB - numA;
+                        }
 
                         if (typeof valA === 'string') valA = valA.toLowerCase();
                         if (typeof valB === 'string') valB = valB.toLowerCase();
@@ -1681,13 +1767,13 @@
                         'カテゴリ (K)': item.category,
                         '電話相手 (L)': item.phonePartner,
                         '調査担当 (M)': item.surveyAssignee,
-                        '調査日 (N)': item.surveyDate,
+                        '調査日 (N)': isValidDate(item.surveyDate) ? item.surveyDate : '',
                         '調査資料回収(枚数) (O)': (item.surveyDocs || []).length,
-                        '置き換え依頼 (P)': item.replaceRequestDate,
-                        '商品手配 (Q)': item.productArrangeDate,
+                        '置き換え依頼 (P)': isValidDate(item.replaceRequestDate) ? item.replaceRequestDate : '',
+                        '商品手配 (Q)': isValidDate(item.productArrangeDate) ? item.productArrangeDate : '',
                         '作業担当 (R)': item.workAssignee,
-                        '日程連絡 (S)': item.scheduleNoticeDate,
-                        '完了 (T)': item.completionDate,
+                        '日程連絡 (S)': isValidDate(item.scheduleNoticeDate) ? item.scheduleNoticeDate : '',
+                        '完了 (T)': isValidDate(item.completionDate) ? item.completionDate : '',
                         'ステータス': calculateStatus(item)
                     }));
 
@@ -1700,8 +1786,8 @@
                 };
 
                 const formatShortDate = (dt) => {
-                    if (!dt) return '-';
-                    return dt.replace('T', ' ');
+                    if (!dt || !isValidDate(dt)) return '-';
+                    return String(dt).replace('T', ' ');
                 };
 
                 const showNotification = (msg) => {
