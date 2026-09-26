@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- SheetJS for Excel Parsing and Export (.xlsx, .xls) -->
+    <!-- SheetJS for Excel Parsing and Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
     <!-- Google Fonts -->
@@ -34,9 +34,12 @@
                         brand: {
                             50: '#f0f7ff',
                             100: '#e0effe',
+                            200: '#bae0fd',
+                            400: '#60a5fa',
                             500: '#2563eb',
                             600: '#1d4ed8',
                             700: '#1e40af',
+                            800: '#1e3a8a',
                         }
                     }
                 }
@@ -69,23 +72,26 @@
         <header v-if="isLoggedIn" class="bg-slate-900 text-white shadow-md sticky top-0 z-40">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
-                    <div class="bg-brand-600 p-2 rounded-lg text-white">
+                    <div class="bg-brand-600 p-2 rounded-xl text-white shadow-md">
                         <i data-lucide="layers" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h1 class="font-bold text-lg leading-tight">顧客・工程進捗管理 CRM</h1>
-                        <p class="text-xs text-slate-400 flex items-center space-x-1">
-                            <span class="w-2 h-2 rounded-full" :class="isCloudConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'"></span>
-                            <span>{{ isCloudConnected ? 'クラウドリアルタイム同期中 (Firestore)' : 'ローカル動作中（クラウド再接続中）' }}</span>
+                        <h1 class="font-bold text-base sm:text-lg leading-tight flex items-center space-x-2">
+                            <span>ZET CRM 顧客・工程進捗管理</span>
+                            <span class="text-[10px] bg-brand-500/30 text-brand-300 border border-brand-400/30 px-1.5 py-0.5 rounded font-mono">v2.5</span>
+                        </h1>
+                        <p class="text-xs text-slate-400 flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full" :class="isCloudConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+                            <span>{{ isCloudConnected ? 'クラウドリアルタイム同期中 (Firestore)' : 'ローカル保管動作中（自動接続試行）' }}</span>
                         </p>
                     </div>
                 </div>
 
                 <!-- User Info & Logout & Admin Trigger -->
-                <div class="flex items-center space-x-3">
-                    <div class="text-right hidden sm:block">
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="text-right hidden md:block">
                         <span class="text-[10px] text-slate-400 block">ログインユーザー</span>
-                        <span class="text-xs font-bold text-brand-400">
+                        <span class="text-xs font-bold text-brand-300">
                             {{ currentUser.name }} ({{ getRoleLabel(currentUser.role) }})
                         </span>
                     </div>
@@ -96,66 +102,63 @@
                         @click="showAdminToolModal = true" 
                         class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs px-3 py-1.5 rounded-xl font-medium transition flex items-center space-x-1.5 shadow-sm">
                         <i data-lucide="settings" class="w-4 h-4 text-brand-400"></i>
-                        <span>管理ツール</span>
+                        <span class="hidden sm:inline">管理ツール</span>
                     </button>
 
                     <!-- Logout Button -->
                     <button 
                         @click="handleLogout" 
-                        class="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/50 text-xs px-3 py-1.5 rounded-xl font-medium transition flex items-center space-x-1 shadow-sm">
+                        class="bg-rose-950/60 hover:bg-rose-900 text-rose-200 border border-rose-800/60 text-xs px-3 py-1.5 rounded-xl font-medium transition flex items-center space-x-1 shadow-sm">
                         <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-                        <span>ログアウト</span>
+                        <span class="hidden sm:inline">ログアウト</span>
                     </button>
                 </div>
             </div>
 
-            <!-- NAVIGATION TABS (Controlled by Role) -->
+            <!-- NAVIGATION TABS -->
             <div class="bg-slate-800 border-t border-slate-700/60 px-4 sm:px-6 lg:px-8">
-                <div class="max-w-7xl mx-auto flex space-x-2 sm:space-x-4 overflow-x-auto">
+                <div class="max-w-7xl mx-auto flex space-x-1 sm:space-x-4 overflow-x-auto custom-scrollbar">
                     <!-- Call Tab -->
                     <button 
-                        v-if="canAccessTab('call')"
                         @click="currentTab = 'call'"
-                        :class="currentTab === 'call' ? 'border-brand-500 text-brand-400 bg-slate-900/50' : 'border-transparent text-slate-400 hover:text-slate-200'"
-                        class="py-3 px-4 text-sm font-medium border-b-2 transition flex items-center space-x-2 whitespace-nowrap">
-                        <i data-lucide="phone" class="w-4 h-4"></i>
-                        <span>コール管理画面</span>
-                        <span class="ml-1 bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full">{{ items.length }}</span>
+                        :class="currentTab === 'call' ? 'border-brand-500 text-brand-400 bg-slate-900/60' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                        class="py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-2 whitespace-nowrap">
+                        <i data-lucide="phone-call" class="w-4 h-4"></i>
+                        <span>コール管理（台帳）</span>
+                        <span class="ml-1 bg-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded-full font-bold">{{ items.length }}</span>
                     </button>
 
                     <!-- Dashboard Tab -->
                     <button 
-                        v-if="canAccessTab('dashboard')"
                         @click="currentTab = 'dashboard'"
-                        :class="currentTab === 'dashboard' ? 'border-brand-500 text-brand-400 bg-slate-900/50' : 'border-transparent text-slate-400 hover:text-slate-200'"
-                        class="py-3 px-4 text-sm font-medium border-b-2 transition flex items-center space-x-2 whitespace-nowrap">
+                        :class="currentTab === 'dashboard' ? 'border-brand-500 text-brand-400 bg-slate-900/60' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                        class="py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-2 whitespace-nowrap">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                        <span>ダッシュボード管理</span>
+                        <span>進捗ダッシュボード</span>
                     </button>
 
                     <!-- Field Report Tab -->
                     <button 
-                        v-if="canAccessTab('field')"
                         @click="currentTab = 'field'"
-                        :class="currentTab === 'field' ? 'border-brand-500 text-brand-400 bg-slate-900/50' : 'border-transparent text-slate-400 hover:text-slate-200'"
-                        class="py-3 px-4 text-sm font-medium border-b-2 transition flex items-center space-x-2 whitespace-nowrap">
-                        <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+                        :class="currentTab === 'field' ? 'border-brand-500 text-brand-400 bg-slate-900/60' : 'border-transparent text-slate-400 hover:text-slate-200'"
+                        class="py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium border-b-2 transition flex items-center space-x-2 whitespace-nowrap">
+                        <i data-lucide="hard-hat" class="w-4 h-4"></i>
                         <span>作業担当報告 (現場用)</span>
-                        <span class="bg-emerald-500/20 text-emerald-400 text-xs px-1.5 py-0.5 rounded font-bold">スマホ最適化</span>
+                        <span class="bg-emerald-500/20 text-emerald-400 text-[10px] px-1.5 py-0.5 rounded font-bold border border-emerald-500/30">モバイル最適</span>
                     </button>
                 </div>
             </div>
         </header>
 
         <!-- LOGIN OVERLAY MODAL -->
-        <div v-if="!isLoggedIn" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-6">
+        <div v-if="!isLoggedIn" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-6 border border-slate-100">
                 <div class="text-center space-y-2">
-                    <div class="bg-brand-600 text-white w-14 h-14 rounded-2xl mx-auto flex items-center justify-center shadow-lg">
-                        <i data-lucide="lock" class="w-8 h-8"></i>
+                    <div class="bg-brand-600 text-white w-14 h-14 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-brand-500/30">
+                        <i data-lucide="shield-check" class="w-8 h-8"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-800">システムログイン</h2>
-                    <p class="text-xs text-slate-500">IDとパスワードを入力してログインしてください</p>
+                    <h2 class="text-2xl font-bold text-slate-800">ZET CRM ログイン</h2>
+                    <p class="text-xs text-slate-500">アカウントIDとパスワードを入力して開始してください</p>
                 </div>
 
                 <form @submit.prevent="handleLogin" class="space-y-4">
@@ -165,7 +168,7 @@
                             v-model="loginForm.id"
                             type="text" 
                             required
-                            placeholder="例: admin, kose09, suguro..."
+                            placeholder="管理者: admin / 担当者ID"
                             class="w-full text-sm p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
                     </div>
 
@@ -185,25 +188,29 @@
 
                     <button 
                         type="submit" 
-                        class="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white text-sm py-3 rounded-xl font-bold shadow-lg transition">
-                        ログインする
+                        class="w-full bg-brand-600 hover:bg-brand-700 active:scale-[0.99] text-white text-sm py-3 rounded-xl font-bold shadow-lg shadow-brand-600/30 transition flex items-center justify-center space-x-2">
+                        <span>ログイン</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </button>
                 </form>
 
                 <!-- Accounts Preset Helper Note -->
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[11px] text-slate-500 space-y-1">
-                    <p class="font-bold text-slate-700">【初期アカウント情報】</p>
-                    <p>・管理者: ID <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-brand-700">admin</code> / PW <code class="bg-slate-200 px-1.5 py-0.5 rounded font-bold text-brand-700">admin</code></p>
-                    <p class="text-[10px] text-slate-400">※ログイン後、「管理ツール」→「アカウント管理」から担当者の追加・編集・削除が行えます。</p>
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-1">
+                    <p class="font-bold text-slate-800 flex items-center space-x-1">
+                        <i data-lucide="key" class="w-3.5 h-3.5 text-brand-600"></i>
+                        <span>テスト用アカウント</span>
+                    </p>
+                    <p class="text-slate-600">・管理者: ID <code class="bg-white border px-1.5 py-0.5 rounded font-mono font-bold text-brand-700">admin</code> / PW <code class="bg-white border px-1.5 py-0.5 rounded font-mono font-bold text-brand-700">admin</code></p>
+                    <p class="text-slate-600">・現場担当: ID <code class="bg-white border px-1.5 py-0.5 rounded font-mono font-bold text-brand-700">kato</code> / PW <code class="bg-white border px-1.5 py-0.5 rounded font-mono font-bold text-brand-700">1234</code></p>
                 </div>
             </div>
         </div>
 
         <!-- MAIN CONTENT AREA -->
-        <main v-if="isLoggedIn" class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+        <main v-if="isLoggedIn" class="flex-grow max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8">
 
             <!-- 1. CALL MANAGEMENT SCREEN -->
-            <section v-if="currentTab === 'call' && canAccessTab('call')" class="space-y-6">
+            <section v-if="currentTab === 'call'" class="space-y-6">
                 <!-- Top Toolbar & Search & Add New -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex-1 flex flex-col sm:flex-row gap-3">
@@ -212,7 +219,7 @@
                             <input 
                                 v-model="searchQuery"
                                 type="text" 
-                                placeholder="店名、NO、住所、携帯番号で検索..."
+                                placeholder="店名、NO、住所、携帯番号、電話相手で検索..."
                                 class="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
                         </div>
                         <select 
@@ -232,12 +239,12 @@
                     <div class="flex items-center space-x-3 justify-between md:justify-end">
                         <button 
                             @click="createNewItem" 
-                            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-bold flex items-center space-x-1 shadow">
+                            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold flex items-center space-x-1.5 shadow">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                             <span>新規案件追加</span>
                         </button>
-                        <div class="text-xs text-slate-500 text-right">
-                            件数: <span class="font-bold text-slate-800">{{ filteredItems.length }}</span> / {{ items.length }} 件
+                        <div class="text-xs text-slate-500 text-right font-medium">
+                            表示件数: <span class="font-bold text-slate-800">{{ filteredItems.length }}</span> / {{ items.length }} 件
                         </div>
                     </div>
                 </div>
@@ -245,11 +252,11 @@
                 <!-- Call List Table & Detail Split View -->
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     
-                    <!-- Contacts List -->
-                    <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[720px]">
-                        <div class="p-3 bg-slate-50 border-b border-slate-200 font-semibold text-xs text-slate-500 uppercase tracking-wider flex justify-between items-center">
-                            <span>案件・連絡先一覧</span>
-                            <span class="text-[10px] text-slate-400">クリックで詳細を表示</span>
+                    <!-- Contacts List Panel -->
+                    <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[680px]">
+                        <div class="p-3 bg-slate-50 border-b border-slate-200 font-semibold text-xs text-slate-600 uppercase tracking-wider flex justify-between items-center">
+                            <span>案件・店舗台帳一覧</span>
+                            <span class="text-[10px] text-slate-400">クリックで詳細・編集</span>
                         </div>
                         
                         <div class="divide-y divide-slate-100 overflow-y-auto custom-scrollbar flex-1">
@@ -260,112 +267,126 @@
                                 :class="selectedItem && selectedItem.id === item.id ? 'bg-brand-50/80 border-l-4 border-brand-600' : 'hover:bg-slate-50 border-l-4 border-transparent'"
                                 class="p-3.5 transition cursor-pointer">
                                 
-                                <div class="flex justify-between items-start mb-1">
+                                <div class="flex justify-between items-start mb-1.5">
                                     <div class="flex items-center space-x-2">
-                                        <span class="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-semibold">NO.{{ item.no }}</span>
-                                        <h3 class="font-bold text-slate-800 text-sm truncate max-w-[180px]">{{ item.storeName || '（未登録店名）' }}</h3>
+                                        <span class="text-xs font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 font-bold border border-slate-200">NO.{{ item.no }}</span>
+                                        <h3 class="font-bold text-slate-800 text-sm truncate max-w-[170px]">{{ item.storeName || '（未登録店名）' }}</h3>
                                     </div>
-                                    <span :class="getStatusBadgeClass(calculateStatus(item))" class="text-[11px] px-2 py-0.5 rounded-full font-medium">
+                                    <span :class="getStatusBadgeClass(calculateStatus(item))" class="text-[10px] px-2 py-0.5 rounded-full font-bold">
                                         {{ calculateStatus(item) }}
                                     </span>
                                 </div>
                                 
                                 <div class="text-xs text-slate-500 space-y-0.5 mb-2">
-                                    <p class="flex items-center text-slate-600">
-                                        <i data-lucide="smartphone" class="w-3 h-3 mr-1 text-slate-400"></i>
+                                    <p class="flex items-center text-slate-700 font-medium">
+                                        <i data-lucide="smartphone" class="w-3.5 h-3.5 mr-1 text-slate-400"></i>
                                         <span>携帯: {{ item.mobilePhone || '未設定' }}</span>
                                     </p>
-                                    <p class="truncate text-slate-400 text-[11px]">
-                                        <i data-lucide="map-pin" class="w-3 h-3 inline mr-0.5"></i> {{ item.address1 }} {{ item.address2 }}
+                                    <p class="truncate text-slate-500 text-[11px]">
+                                        <i data-lucide="map-pin" class="w-3 h-3 inline mr-0.5 text-slate-400"></i> {{ item.address1 }} {{ item.address2 }}
                                     </p>
                                 </div>
 
                                 <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
                                     <span>調査日: {{ item.surveyDate ? formatShortDate(item.surveyDate) : '未設定' }}</span>
-                                    <span>作業担当: {{ item.workAssignee || '未アサイン' }}</span>
+                                    <span class="font-medium text-slate-600">作業: {{ item.workAssignee || '未アサイン' }}</span>
                                 </div>
                             </div>
 
                             <div v-if="filteredItems.length === 0" class="p-12 text-center text-slate-400 space-y-2">
-                                <i data-lucide="inbox" class="w-8 h-8 mx-auto text-slate-300"></i>
-                                <p>該当する案件データがありません</p>
-                                <p class="text-xs text-slate-400">管理ツールからCSV/Excelをインポートするか、新規案件を追加してください</p>
+                                <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-300"></i>
+                                <p class="text-xs">条件に合致する案件データが見つかりません</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Selected Contact Detail & Form -->
-                    <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[720px]">
+                    <!-- Selected Contact Detail & Form Panel -->
+                    <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-[680px]">
                         <div v-if="selectedItem" class="flex flex-col h-full">
                             <!-- Detail Header -->
-                            <div class="bg-slate-900 text-white p-4 flex justify-between items-start">
+                            <div class="bg-slate-900 text-white p-4 flex justify-between items-start shadow-inner">
                                 <div>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="bg-brand-500 text-white text-xs px-2 py-0.5 rounded font-mono">NO.{{ selectedItem.no }}</span>
+                                    <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                        <span class="bg-brand-500 text-white text-xs px-2 py-0.5 rounded font-mono font-bold">NO.{{ selectedItem.no }}</span>
                                         <span class="text-xs text-slate-300">店番: {{ selectedItem.storeNo || '-' }}</span>
-                                        <span class="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded">{{ selectedItem.category || 'カテゴリ未設定' }}</span>
+                                        <span class="bg-slate-800 border border-slate-700 text-slate-300 text-xs px-2 py-0.5 rounded">{{ selectedItem.category || 'カテゴリ未設定' }}</span>
                                     </div>
                                     <h2 class="text-xl font-bold mt-1 text-white">{{ selectedItem.storeName || '未命名店舗' }}</h2>
-                                    <p class="text-xs text-slate-400 mt-0.5">{{ selectedItem.address1 }} {{ selectedItem.address2 }} {{ selectedItem.building }}</p>
+                                    <p class="text-xs text-slate-400 mt-0.5 flex items-center">
+                                        <i data-lucide="map-pin" class="w-3 h-3 mr-1"></i>
+                                        {{ selectedItem.address1 }} {{ selectedItem.address2 }} {{ selectedItem.building }}
+                                    </p>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-xs text-slate-400 mb-1">現在の自動ステータス</div>
-                                    <span :class="getStatusBadgeClass(calculateStatus(selectedItem))" class="text-xs px-3 py-1 rounded-full font-semibold">
+                                    <div class="text-[10px] text-slate-400 mb-1">現在の自動更新ステータス</div>
+                                    <span :class="getStatusBadgeClass(calculateStatus(selectedItem))" class="text-xs px-3 py-1 rounded-full font-bold shadow-sm">
                                         {{ calculateStatus(selectedItem) }}
                                     </span>
                                 </div>
                             </div>
 
-                            <!-- Form Content -->
+                            <!-- Form Content Scrollable -->
                             <div class="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
                                 
-                                <!-- Readonly Info (Columns A - I) -->
-                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
-                                    <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                                        <span class="flex items-center space-x-1">
-                                            <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i>
-                                            <span>基本情報（カラム A 〜 I）</span>
+                                <!-- Readonly / Basic Info (Columns A - I) -->
+                                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                                    <div class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between border-b border-slate-200 pb-2">
+                                        <span class="flex items-center space-x-1.5">
+                                            <i data-lucide="database" class="w-3.5 h-3.5 text-brand-600"></i>
+                                            <span>基本店舗情報（カラム A 〜 I）</span>
                                         </span>
-                                        <span class="text-[10px] text-amber-600 font-normal">※コール担当者は閲覧のみ</span>
                                     </div>
                                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                                         <div>
-                                            <span class="text-slate-400 block">NO (A) / 店番 (B)</span>
-                                            <span class="font-medium text-slate-700">{{ selectedItem.no }} / {{ selectedItem.storeNo || '-' }}</span>
+                                            <span class="text-slate-400 block mb-0.5">NO (A) / 店番 (B)</span>
+                                            <input v-model="selectedItem.no" @change="saveData" type="text" class="w-full text-xs p-1.5 border border-slate-300 rounded font-mono bg-white">
                                         </div>
                                         <div>
-                                            <span class="text-slate-400 block">店舗携帯番号 (H)</span>
-                                            <a v-if="selectedItem.mobilePhone" :href="'tel:' + selectedItem.mobilePhone" class="font-bold text-brand-600 underline">
-                                                {{ selectedItem.mobilePhone }}
-                                            </a>
-                                            <span v-else class="text-slate-400">-</span>
+                                            <span class="text-slate-400 block mb-0.5">店舗名 (D)</span>
+                                            <input v-model="selectedItem.storeName" @change="saveData" type="text" class="w-full text-xs p-1.5 border border-slate-300 rounded bg-white font-bold">
                                         </div>
                                         <div>
-                                            <span class="text-slate-400 block">運営 (I)</span>
-                                            <span class="font-medium text-slate-700">{{ selectedItem.operation || '-' }}</span>
+                                            <span class="text-slate-400 block mb-0.5">携帯番号 (H)</span>
+                                            <div class="flex items-center space-x-1">
+                                                <input v-model="selectedItem.mobilePhone" @change="saveData" type="text" class="w-full text-xs p-1.5 border border-slate-300 rounded bg-white">
+                                                <a v-if="selectedItem.mobilePhone" :href="'tel:' + selectedItem.mobilePhone" class="bg-emerald-600 text-white p-1.5 rounded hover:bg-emerald-700" title="発信">
+                                                    <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                                                </a>
+                                            </div>
                                         </div>
-                                        <div class="col-span-2 sm:col-span-3">
-                                            <span class="text-slate-400 block">店舗住所 (E〜G)</span>
-                                            <span class="font-medium text-slate-700">{{ selectedItem.address1 }} {{ selectedItem.address2 }} {{ selectedItem.building }}</span>
+                                        <div>
+                                            <span class="text-slate-400 block mb-0.5">運営区分 (I)</span>
+                                            <input v-model="selectedItem.operation" @change="saveData" type="text" placeholder="例: 直営/FC" class="w-full text-xs p-1.5 border border-slate-300 rounded bg-white">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <span class="text-slate-400 block mb-0.5">店舗住所 (E〜G)</span>
+                                            <div class="grid grid-cols-2 gap-1">
+                                                <input v-model="selectedItem.address1" @change="saveData" type="text" placeholder="住所1" class="text-xs p-1.5 border border-slate-300 rounded bg-white">
+                                                <input v-model="selectedItem.address2" @change="saveData" type="text" placeholder="住所2・ビル" class="text-xs p-1.5 border border-slate-300 rounded bg-white">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Editable Section (Columns J - T) -->
                                 <div class="space-y-4">
-                                    <div class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b pb-2 flex items-center justify-between">
-                                        <span>対応・調査・工程入力（カラム J 〜 T）</span>
-                                        <span class="text-[11px] text-brand-600 font-normal">※入力によりステータスが自動推進されます</span>
+                                    <div class="text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200 pb-2 flex items-center justify-between">
+                                        <span class="flex items-center space-x-1.5">
+                                            <i data-lucide="edit-3" class="w-4 h-4 text-brand-600"></i>
+                                            <span>工程・対応情報（カラム J 〜 T）</span>
+                                        </span>
+                                        <span class="text-[10px] text-brand-600 font-normal">※日付や担当の入力に応じてステータスが自動計算されます</span>
                                     </div>
 
                                     <!-- Column J: 備考欄 -->
                                     <div>
-                                        <label class="block text-xs font-medium text-slate-700 mb-1">備考欄 (J)</label>
+                                        <label class="block text-xs font-medium text-slate-700 mb-1">備考欄 / ヒアリング記述 (J)</label>
                                         <textarea 
                                             v-model="selectedItem.remarks" 
+                                            @change="saveData"
                                             rows="2" 
                                             class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                                            placeholder="自由ヒアリング記述メモ...">
+                                            placeholder="自由ヒアリングメモ、電話対応記録等...">
                                         </textarea>
                                     </div>
 
@@ -375,11 +396,13 @@
                                             <label class="block text-xs font-medium text-slate-700 mb-1">カテゴリ (K)</label>
                                             <select 
                                                 v-model="selectedItem.category" 
+                                                @change="saveData"
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 bg-white">
                                                 <option value="">未選択</option>
                                                 <option value="ビルトイン">ビルトイン</option>
                                                 <option value="フードコート">フードコート</option>
                                                 <option value="フリスタ">フリスタ</option>
+                                                <option value="ロードサイド">ロードサイド</option>
                                             </select>
                                         </div>
 
@@ -388,6 +411,7 @@
                                             <label class="block text-xs font-medium text-slate-700 mb-1">電話相手 (L)</label>
                                             <input 
                                                 v-model="selectedItem.phonePartner" 
+                                                @change="saveData"
                                                 type="text" 
                                                 placeholder="相手担当者名を入力" 
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
@@ -398,25 +422,30 @@
                                             <label class="block text-xs font-medium text-slate-700 mb-1">調査担当 (M)</label>
                                             <input 
                                                 v-model="selectedItem.surveyAssignee" 
+                                                @change="saveData"
                                                 type="text" 
-                                                placeholder="調査担当者名を入力" 
+                                                placeholder="調査担当者名" 
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
                                         </div>
 
                                         <!-- Column N: 調査日 -->
                                         <div>
-                                            <label class="block text-xs font-medium text-slate-700 mb-1">調査日 (N)</label>
+                                            <label class="block text-xs font-medium text-slate-700 mb-1">調査日時 (N)</label>
                                             <input 
                                                 v-model="selectedItem.surveyDate" 
+                                                @change="saveData"
                                                 type="datetime-local" 
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
                                         </div>
 
                                         <!-- Column O: 調査資料回収 (最大20枚アップロード) -->
-                                        <div class="sm:col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <label class="block text-xs font-medium text-slate-700">調査資料回収 (O) [画像・PDF・Excel (最大20枚)]</label>
-                                                <span class="text-[10px] text-slate-500">添付済み: {{ (selectedItem.surveyDocs || []).length }} / 20 枚</span>
+                                        <div class="sm:col-span-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                            <div class="flex items-center justify-between mb-2">
+                                                <label class="block text-xs font-bold text-slate-700 flex items-center space-x-1">
+                                                    <i data-lucide="paperclip" class="w-3.5 h-3.5 text-brand-600"></i>
+                                                    <span>現地写真・調査資料 (O) [最大20枚]</span>
+                                                </label>
+                                                <span class="text-[10px] font-bold text-slate-500">登録済み: {{ (selectedItem.surveyDocs || []).length }} / 20 枚</span>
                                             </div>
                                             
                                             <div class="flex items-center space-x-3 mb-2">
@@ -424,22 +453,22 @@
                                                     type="file" 
                                                     multiple
                                                     @change="handleFileUpload($event, selectedItem)" 
-                                                    accept="image/*,.pdf,.xlsx,.xls"
-                                                    class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
+                                                    accept="image/*,.pdf"
+                                                    class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-brand-100 file:text-brand-700 hover:file:bg-brand-200">
                                             </div>
                                             
                                             <!-- Files List -->
-                                            <div v-if="selectedItem.surveyDocs && selectedItem.surveyDocs.length > 0" class="space-y-1.5 mt-2 max-h-36 overflow-y-auto custom-scrollbar">
+                                            <div v-if="selectedItem.surveyDocs && selectedItem.surveyDocs.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
                                                 <div 
                                                     v-for="(doc, idx) in selectedItem.surveyDocs" 
-                                                    :key="idx" 
-                                                    class="text-xs flex items-center justify-between bg-white p-2 rounded border border-slate-200">
-                                                    <div class="flex items-center space-x-2 truncate">
-                                                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-slate-400"></i>
-                                                        <span class="truncate max-w-xs font-medium text-slate-700">{{ doc.name }}</span>
+                                                    :key="doc.id || idx" 
+                                                    class="text-xs bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex flex-col justify-between space-y-1">
+                                                    <div @click="openDocPreview(doc)" class="cursor-pointer h-16 bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+                                                        <img v-if="doc.url && doc.url.startsWith('data:image')" :src="doc.url" class="w-full h-full object-cover">
+                                                        <i v-else data-lucide="file-text" class="w-6 h-6 text-slate-400"></i>
                                                     </div>
-                                                    <div class="flex items-center space-x-2">
-                                                        <a v-if="doc.url" :href="doc.url" target="_blank" class="text-brand-600 underline text-[11px]">閲覧</a>
+                                                    <div class="flex items-center justify-between text-[10px]">
+                                                        <span class="truncate font-medium text-slate-700 max-w-[80px]">{{ doc.name }}</span>
                                                         <button @click="removeFile(selectedItem, idx)" class="text-rose-500 hover:text-rose-700 p-0.5">
                                                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                                                         </button>
@@ -450,27 +479,30 @@
 
                                         <!-- Column P: 置き換え依頼 -->
                                         <div>
-                                            <label class="block text-xs font-medium text-slate-700 mb-1">置き換え依頼 (P)</label>
+                                            <label class="block text-xs font-medium text-slate-700 mb-1">置き換え依頼日時 (P)</label>
                                             <input 
                                                 v-model="selectedItem.replaceRequestDate" 
+                                                @change="saveData"
                                                 type="datetime-local" 
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
                                         </div>
 
                                         <!-- Column Q: 商品手配 -->
                                         <div>
-                                            <label class="block text-xs font-medium text-slate-700 mb-1">商品手配 (Q)</label>
+                                            <label class="block text-xs font-medium text-slate-700 mb-1">商品手配日時 (Q)</label>
                                             <input 
                                                 v-model="selectedItem.productArrangeDate" 
+                                                @change="saveData"
                                                 type="datetime-local" 
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
                                         </div>
 
                                         <!-- Column R: 作業担当 -->
                                         <div>
-                                            <label class="block text-xs font-medium text-slate-700 mb-1">作業担当 (R)</label>
+                                            <label class="block text-xs font-medium text-slate-700 mb-1">作業担当者 (R)</label>
                                             <select 
                                                 v-model="selectedItem.workAssignee" 
+                                                @change="saveData"
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 bg-white">
                                                 <option value="">未選択</option>
                                                 <option v-for="worker in workerList" :key="worker" :value="worker">{{ worker }}</option>
@@ -479,867 +511,572 @@
 
                                         <!-- Column S: 日程連絡 -->
                                         <div>
-                                            <label class="block text-xs font-medium text-slate-700 mb-1">日程連絡 (S)</label>
+                                            <label class="block text-xs font-medium text-slate-700 mb-1">日程連絡日時 (S)</label>
                                             <input 
                                                 v-model="selectedItem.scheduleNoticeDate" 
+                                                @change="saveData"
                                                 type="datetime-local" 
                                                 class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
                                         </div>
 
-                                        <!-- Column T: 完了 -->
+                                        <!-- Column T: 作業完了 -->
                                         <div class="sm:col-span-2">
-                                            <label class="block text-xs font-bold text-emerald-700 mb-1">完了日 (T)</label>
+                                            <label class="block text-xs font-bold text-slate-800 mb-1">作業完了日時 (T)</label>
                                             <input 
-                                                v-model="selectedItem.completionDate" 
+                                                v-model="selectedItem.workCompletedDate" 
+                                                @change="saveData"
                                                 type="datetime-local" 
-                                                class="w-full text-xs p-2 border border-emerald-300 bg-emerald-50/50 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                                                class="w-full text-xs p-2.5 border border-emerald-300 bg-emerald-50/30 rounded-lg font-bold text-emerald-900 focus:ring-2 focus:ring-emerald-500">
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Footer Cloud Sync Save Button -->
-                            <div class="p-3 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
-                                <span class="text-xs text-slate-500">※編集内容はリアルタイムでクラウド保存されます</span>
-                                <button 
-                                    @click="saveItemToFirestore(selectedItem)"
-                                    class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-4 py-2 rounded-lg font-medium shadow flex items-center space-x-1">
-                                    <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
-                                    <span>保存確定</span>
-                                </button>
-                            </div>
                         </div>
 
-                        <!-- No Selection Placeholder -->
-                        <div v-else class="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center space-y-2">
-                            <i data-lucide="mouse-pointer-click" class="w-12 h-12 text-slate-300"></i>
-                            <p class="font-medium">左側のリストから案件を選択してください</p>
-                            <p class="text-xs text-slate-400">詳細の確認および各種項目の入力・ステータス更新が行えます</p>
+                        <div v-else class="flex flex-col items-center justify-center h-full text-slate-400 p-8 space-y-2">
+                            <i data-lucide="mouse-pointer-click" class="w-10 h-10 text-slate-300"></i>
+                            <p class="text-xs">左側の案件一覧から選択すると詳細が表示されます</p>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- 2. DASHBOARD MANAGEMENT SCREEN -->
-            <section v-if="currentTab === 'dashboard' && canAccessTab('dashboard')" class="space-y-6">
-                <!-- KPI Summary Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <span class="text-xs font-medium text-slate-500 block">全案件数</span>
-                        <span class="text-2xl font-bold text-slate-800">{{ items.length }}</span>
-                        <span class="text-[10px] text-slate-400 block mt-1">管理中の総リスト</span>
+            <section v-if="currentTab === 'dashboard'" class="space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-800">全社進捗ダッシュボード</h2>
+                            <p class="text-xs text-slate-500">案件ごとのステータス分布と作業進捗の集計です</p>
+                        </div>
+                        <button @click="renderChart" class="text-xs text-brand-600 hover:text-brand-700 flex items-center space-x-1 font-bold">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                            <span>グラフ更新</span>
+                        </button>
                     </div>
-
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
-                        <span class="text-xs font-medium text-slate-500 block">未対応 / 電話対応中</span>
-                        <span class="text-2xl font-bold text-amber-600">{{ getStatusCount('未対応') + getStatusCount('電話対応中') }}</span>
-                        <span class="text-[10px] text-slate-400 block mt-1">初期コール進行中</span>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-500">
-                        <span class="text-xs font-medium text-slate-500 block">現地調査確定</span>
-                        <span class="text-2xl font-bold text-blue-600">{{ getStatusCount('調査日時確定') }}</span>
-                        <span class="text-[10px] text-slate-400 block mt-1">現地アポ獲得済み</span>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-indigo-500">
-                        <span class="text-xs font-medium text-slate-500 block">資料回収・商品手配</span>
-                        <span class="text-2xl font-bold text-indigo-600">{{ getStatusCount('資料回収完了') + getStatusCount('置き換え手配済') }}</span>
-                        <span class="text-[10px] text-slate-400 block mt-1">準備中</span>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-purple-500">
-                        <span class="text-xs font-medium text-slate-500 block">作業日時確定</span>
-                        <span class="text-2xl font-bold text-purple-600">{{ getStatusCount('作業日時確定') }}</span>
-                        <span class="text-[10px] text-slate-400 block mt-1">現場担当作業予定</span>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
-                        <span class="text-xs font-medium text-slate-500 block">完了件数</span>
-                        <span class="text-2xl font-bold text-emerald-600">{{ getStatusCount('完了') }}</span>
-                        <span class="text-[10px] text-slate-400 block mt-1">全工程終了</span>
-                    </div>
-                </div>
-
-                <!-- Graphs & Worker Metrics Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    <!-- Status Distribution Chart -->
-                    <div class="lg:col-span-7 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                        <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center space-x-2">
-                            <i data-lucide="pie-chart" class="w-4 h-4 text-brand-600"></i>
-                            <span>ステータス別全進捗パイプライン</span>
-                        </h3>
-                        <div class="h-64">
-                            <canvas id="statusChart"></canvas>
+                    
+                    <!-- KPI Cards Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <span class="text-xs text-slate-500 font-medium block mb-1">総案件数</span>
+                            <span class="text-3xl font-extrabold text-slate-800 font-mono">{{ items.length }}</span>
+                        </div>
+                        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200">
+                            <span class="text-xs text-amber-700 font-medium block mb-1">調査日時確定</span>
+                            <span class="text-3xl font-extrabold text-amber-700 font-mono">{{ getStatusCount('調査日時確定') }}</span>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200">
+                            <span class="text-xs text-indigo-700 font-medium block mb-1">作業日時確定</span>
+                            <span class="text-3xl font-extrabold text-indigo-700 font-mono">{{ getStatusCount('作業日時確定') }}</span>
+                        </div>
+                        <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                            <span class="text-xs text-emerald-700 font-medium block mb-1">完了</span>
+                            <span class="text-3xl font-extrabold text-emerald-700 font-mono">{{ getStatusCount('完了') }}</span>
                         </div>
                     </div>
 
-                    <!-- Worker Load Summary -->
-                    <div class="lg:col-span-5 bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center space-x-2">
-                                <i data-lucide="users" class="w-4 h-4 text-brand-600"></i>
-                                <span>作業担当者別 アサイン・完了状況</span>
-                            </h3>
+                    <!-- Chart Container -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                        <div class="md:col-span-5 bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center justify-center">
+                            <h3 class="text-xs font-bold text-slate-700 mb-2">ステータス構成比率</h3>
+                            <div class="w-48 h-48">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
 
-                            <div class="space-y-3 max-h-56 overflow-y-auto custom-scrollbar pr-2">
-                                <div v-for="worker in workerList" :key="worker" class="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-                                    <div class="flex justify-between items-center text-xs mb-1">
-                                        <span class="font-bold text-slate-700">{{ worker }}</span>
-                                        <span class="text-slate-500">
-                                            担当: {{ getWorkerStats(worker).total }}件 
-                                            (完了: {{ getWorkerStats(worker).completed }}件)
-                                        </span>
+                        <!-- Progress Summary Matrix -->
+                        <div class="md:col-span-7 space-y-2">
+                            <h3 class="text-xs font-bold text-slate-700 mb-2">工程進捗率</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="flex justify-between text-xs mb-1">
+                                        <span class="font-medium text-slate-600">全工程完了率</span>
+                                        <span class="font-bold text-emerald-600">{{ getCompletionPercentage() }}%</span>
                                     </div>
-                                    <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                                        <div 
-                                            class="bg-brand-600 h-2 rounded-full" 
-                                            :style="{ width: getWorkerStats(worker).percent + '%' }">
-                                        </div>
+                                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                                        <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" :style="{ width: getCompletionPercentage() + '%' }"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Data Export Quick Control -->
-                        <div class="mt-4 pt-4 border-t border-slate-200">
-                            <button 
-                                @click="exportExcel" 
-                                class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2.5 rounded-lg font-bold text-center flex items-center justify-center space-x-2 shadow">
-                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                                <span>全データを Excel (.xlsx) 出力する</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- All Records Management Table with Sorting & Excel Export -->
-                <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap justify-between items-center gap-2">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-sm">全データ一括閲覧 (カラム A〜T列)</h3>
-                            <p class="text-[11px] text-slate-400">ヘッダー名をクリックすると昇順・降順ソートが可能です</p>
-                        </div>
-                        <button 
-                            @click="exportExcel" 
-                            class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 shadow-sm">
-                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                            <span>Excel形式保存</span>
-                        </button>
                     </div>
 
-                    <div class="overflow-x-auto custom-scrollbar">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead class="bg-slate-100 text-slate-600 font-semibold border-b select-none">
-                                <tr>
-                                    <th @click="sortBy('no')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        NO <span v-if="sortKey==='no'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('storeNo')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        店番 <span v-if="sortKey==='storeNo'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('storeName')" class="p-2.5 cursor-pointer hover:bg-slate-200 whitespace-nowrap">
-                                        店名 <span v-if="sortKey==='storeName'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('mobilePhone')" class="p-2.5 cursor-pointer hover:bg-slate-200 whitespace-nowrap">
-                                        店舗携帯番号 <span v-if="sortKey==='mobilePhone'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('category')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        カテゴリ <span v-if="sortKey==='category'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('phonePartner')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        電話相手 <span v-if="sortKey==='phonePartner'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('surveyAssignee')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        調査担当 <span v-if="sortKey==='surveyAssignee'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('surveyDate')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        調査日 <span v-if="sortKey==='surveyDate'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th class="p-2.5">資料枚数</th>
-                                    <th @click="sortBy('replaceRequestDate')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        置き換え依頼 <span v-if="sortKey==='replaceRequestDate'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('productArrangeDate')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        商品手配 <span v-if="sortKey==='productArrangeDate'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('workAssignee')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        作業担当 <span v-if="sortKey==='workAssignee'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('scheduleNoticeDate')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        日程連絡 <span v-if="sortKey==='scheduleNoticeDate'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th @click="sortBy('completionDate')" class="p-2.5 cursor-pointer hover:bg-slate-200">
-                                        完了日 <span v-if="sortKey==='completionDate'">{{ sortOrder==='asc'?'▲':'▼' }}</span>
-                                    </th>
-                                    <th class="p-2.5">ステータス</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr v-for="item in sortedItems" :key="item.id" class="hover:bg-slate-50">
-                                    <td class="p-2.5 font-mono">{{ item.no }}</td>
-                                    <td class="p-2.5">{{ item.storeNo || '-' }}</td>
-                                    <td class="p-2.5 font-bold text-slate-800 whitespace-nowrap">{{ item.storeName || '-' }}</td>
-                                    <td class="p-2.5 whitespace-nowrap font-medium text-slate-700">{{ item.mobilePhone || '-' }}</td>
-                                    <td class="p-2.5"><span class="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px]">{{ item.category || '-' }}</span></td>
-                                    <td class="p-2.5">{{ item.phonePartner || '-' }}</td>
-                                    <td class="p-2.5">{{ item.surveyAssignee || '-' }}</td>
-                                    <td class="p-2.5 whitespace-nowrap">{{ formatShortDate(item.surveyDate) }}</td>
-                                    <td class="p-2.5">
-                                        <span v-if="item.surveyDocs && item.surveyDocs.length > 0" class="text-emerald-600 font-bold">
-                                            {{ item.surveyDocs.length }}枚
-                                        </span>
-                                        <span v-else class="text-slate-300">-</span>
-                                    </td>
-                                    <td class="p-2.5 whitespace-nowrap">{{ formatShortDate(item.replaceRequestDate) }}</td>
-                                    <td class="p-2.5 whitespace-nowrap">{{ formatShortDate(item.productArrangeDate) }}</td>
-                                    <td class="p-2.5">{{ item.workAssignee || '-' }}</td>
-                                    <td class="p-2.5 whitespace-nowrap">{{ formatShortDate(item.scheduleNoticeDate) }}</td>
-                                    <td class="p-2.5 whitespace-nowrap text-emerald-600 font-medium">{{ formatShortDate(item.completionDate) }}</td>
-                                    <td class="p-2.5">
-                                        <span :class="getStatusBadgeClass(calculateStatus(item))" class="px-2 py-0.5 rounded-full text-[10px]">
-                                            {{ calculateStatus(item) }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                <tr v-if="sortedItems.length === 0">
-                                    <td colspan="15" class="p-8 text-center text-slate-400">データが登録されていません</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <!-- Master Overview Table -->
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                        <h3 class="text-xs font-bold text-slate-700">全案件一括リスト</h3>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-xs text-left bg-white rounded-lg overflow-hidden border border-slate-200">
+                                <thead class="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
+                                    <tr>
+                                        <th class="p-2.5">NO</th>
+                                        <th class="p-2.5">店名</th>
+                                        <th class="p-2.5">住所</th>
+                                        <th class="p-2.5">携帯番号</th>
+                                        <th class="p-2.5">調査担当</th>
+                                        <th class="p-2.5">作業担当</th>
+                                        <th class="p-2.5">ステータス</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr v-for="item in items" :key="item.id" class="hover:bg-slate-50 transition">
+                                        <td class="p-2.5 font-mono font-bold text-slate-700">{{ item.no }}</td>
+                                        <td class="p-2.5 font-bold text-slate-800">{{ item.storeName || '-' }}</td>
+                                        <td class="p-2.5 text-slate-500 max-w-xs truncate">{{ item.address1 }} {{ item.address2 }}</td>
+                                        <td class="p-2.5 font-mono">{{ item.mobilePhone || '-' }}</td>
+                                        <td class="p-2.5">{{ item.surveyAssignee || '-' }}</td>
+                                        <td class="p-2.5">{{ item.workAssignee || '-' }}</td>
+                                        <td class="p-2.5">
+                                            <span :class="getStatusBadgeClass(calculateStatus(item))" class="px-2 py-0.5 rounded-full text-[10px]">
+                                                {{ calculateStatus(item) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 3. FIELD REPORT SCREEN (画面3: 作業担当報告 - スマホ最適化) -->
-            <section v-if="currentTab === 'field' && canAccessTab('field')" class="space-y-5 max-w-3xl mx-auto">
-                <!-- Worker Switcher Header Banner -->
-                <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <!-- 3. FIELD REPORT SCREEN (SMARTPHONE OPTIMIZED) -->
+            <section v-if="currentTab === 'field'" class="max-w-2xl mx-auto space-y-4">
+                <div class="bg-slate-900 text-white p-4 rounded-xl shadow-md flex items-center justify-between border border-slate-800">
                     <div class="flex items-center space-x-3">
-                        <div class="bg-emerald-500 text-slate-900 p-2.5 rounded-xl font-bold">
+                        <div class="bg-emerald-500 p-2.5 rounded-xl text-slate-950 shadow">
                             <i data-lucide="hard-hat" class="w-6 h-6"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] text-slate-400 font-medium block">作業担当（現場用モバイル表示）</span>
-                            <div class="flex items-center space-x-2">
-                                <label class="text-xs font-bold text-slate-300 whitespace-nowrap">担当者:</label>
-                                <select 
-                                    v-model="currentWorker" 
-                                    class="bg-slate-800 text-white font-bold text-sm px-3 py-1 rounded-lg border border-slate-700 focus:ring-2 focus:ring-brand-500">
+                            <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">作業担当専用モバイル画面</span>
+                            <div class="flex items-center space-x-2 mt-0.5">
+                                <label class="text-xs text-slate-300 font-bold">担当者:</label>
+                                <select v-model="selectedWorkerFilter" class="bg-slate-800 text-white text-xs border border-slate-700 rounded-lg px-2.5 py-1 font-medium focus:ring-2 focus:ring-brand-500">
+                                    <option value="">（全件表示）</option>
                                     <option v-for="worker in workerList" :key="worker" :value="worker">{{ worker }}</option>
                                 </select>
                             </div>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between sm:justify-end space-x-3 border-t border-slate-800 sm:border-t-0 pt-2 sm:pt-0">
-                        <div class="text-right">
-                            <span class="text-[10px] text-slate-400 block">担当案件数</span>
-                            <span class="text-lg font-bold text-emerald-400">{{ myWorkItems.length }} <span class="text-xs font-normal text-slate-300">件</span></span>
-                        </div>
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 block">担当件数</span>
+                        <span class="text-2xl font-extrabold text-emerald-400 font-mono">{{ workerAssignedItems.length }}</span>
                     </div>
                 </div>
 
-                <!-- Work Items Card List (Optimized for Mobile Touch & Tap) -->
-                <div class="space-y-4">
-                    <div 
-                        v-for="item in myWorkItems" 
-                        :key="item.id" 
-                        class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition overflow-hidden">
-                        
-                        <!-- Card Header -->
-                        <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-start justify-between">
-                            <div class="space-y-1">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-xs font-mono bg-slate-200 px-2 py-0.5 rounded text-slate-700 font-bold">NO.{{ item.no }}</span>
-                                    <span class="text-xs font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded" v-if="item.storeNo">店番: {{ item.storeNo }}</span>
-                                    <span class="text-[11px] bg-brand-100 text-brand-700 font-medium px-2 py-0.5 rounded-full">{{ item.category || 'カテゴリ未設定' }}</span>
-                                </div>
-                                <h3 class="text-lg font-bold text-slate-800 leading-snug">{{ item.storeName || '未命名店舗' }}</h3>
+                <div v-for="item in workerAssignedItems" :key="item.id" class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden space-y-3 p-4">
+                    <div class="flex justify-between items-start border-b border-slate-100 pb-2.5">
+                        <div>
+                            <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                                <span class="bg-slate-100 text-slate-700 font-mono text-xs px-2 py-0.5 rounded font-bold border border-slate-200">NO.{{ item.no }}</span>
+                                <span class="text-xs text-slate-500">店番: {{ item.storeNo || '-' }}</span>
+                                <span class="bg-brand-50 text-brand-700 text-xs px-2 py-0.5 rounded font-bold">{{ item.category || 'カテゴリ未設定' }}</span>
                             </div>
-                            <span :class="getStatusBadgeClass(calculateStatus(item))" class="text-xs px-2.5 py-1 rounded-full font-semibold whitespace-nowrap">
-                                {{ calculateStatus(item) }}
-                            </span>
+                            <h2 class="text-lg font-bold text-slate-800 mt-1">{{ item.storeName }}</h2>
+                        </div>
+                        <span :class="getStatusBadgeClass(calculateStatus(item))" class="text-xs px-2.5 py-1 rounded-full font-bold">
+                            {{ calculateStatus(item) }}
+                        </span>
+                    </div>
+
+                    <!-- Action Quick Buttons (Touch targets) -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <a v-if="item.mobilePhone" :href="'tel:' + item.mobilePhone" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs py-2.5 px-3 rounded-xl font-bold flex items-center justify-center space-x-1.5 shadow transition">
+                            <i data-lucide="phone-call" class="w-4 h-4"></i>
+                            <span>電話をかける</span>
+                        </a>
+                        <div v-else class="bg-slate-100 text-slate-400 text-xs py-2.5 px-3 rounded-xl text-center font-medium">電話番号未設定</div>
+
+                        <a :href="'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((item.address1 || '') + (item.address2 || '') + ' ' + (item.storeName || ''))" target="_blank" class="bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs py-2.5 px-3 rounded-xl font-bold flex items-center justify-center space-x-1.5 shadow transition">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            <span>地図でナビ起動</span>
+                        </a>
+                    </div>
+
+                    <!-- Address & Contact Info -->
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+                        <p class="text-slate-700 font-medium">📍 {{ item.address1 }} {{ item.address2 }} {{ item.building }}</p>
+                        <p class="text-slate-600">👤 電話相手: {{ item.phonePartner || '未指定' }}</p>
+                    </div>
+
+                    <!-- Field Note -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">現地作業メモ・連絡事項 (J)</label>
+                        <textarea 
+                            v-model="item.remarks" 
+                            @change="saveData"
+                            rows="2" 
+                            placeholder="現場での特記事項を入力..." 
+                            class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500">
+                        </textarea>
+                    </div>
+
+                    <!-- Photo Upload Section -->
+                    <div class="bg-brand-50/50 border border-brand-200 rounded-xl p-3 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-bold text-brand-900 flex items-center space-x-1">
+                                <i data-lucide="camera" class="w-4 h-4 text-brand-600"></i>
+                                <span>現地写真・調査資料 (最大20枚)</span>
+                            </label>
+                            <span class="text-[11px] font-bold text-brand-700">{{ (item.surveyDocs || []).length }} / 20 枚</span>
                         </div>
 
-                        <!-- Card Body (Location, Phone & Quick Actions) -->
-                        <div class="p-4 space-y-4">
-                            <!-- Quick Action Buttons (Call & Map) -->
-                            <div class="grid grid-cols-2 gap-2">
-                                <a 
-                                    v-if="item.mobilePhone" 
-                                    :href="'tel:' + item.mobilePhone" 
-                                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center space-x-2 shadow-sm transition active:scale-[0.98]">
-                                    <i data-lucide="phone-call" class="w-4 h-4"></i>
-                                    <span>電話をかける</span>
-                                </a>
-                                <div v-else class="bg-slate-100 text-slate-400 font-medium text-xs py-2.5 px-3 rounded-xl text-center">
-                                    電話番号未登録
-                                </div>
-
-                                <a 
-                                    v-if="item.address1" 
-                                    :href="'https://maps.google.com/?q=' + encodeURIComponent(item.address1 + ' ' + (item.address2 || '') + ' ' + (item.building || ''))" 
-                                    target="_blank" 
-                                    class="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center space-x-2 shadow-sm transition active:scale-[0.98]">
-                                    <i data-lucide="map-pin" class="w-4 h-4"></i>
-                                    <span>地図を見る</span>
-                                </a>
-                                <div v-else class="bg-slate-100 text-slate-400 font-medium text-xs py-2.5 px-3 rounded-xl text-center">
-                                    住所未登録
-                                </div>
-                            </div>
-
-                            <!-- Detailed Address & Contact Info -->
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1 text-slate-700">
-                                <p class="flex items-start">
-                                    <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0 mt-0.5"></i>
-                                    <span>{{ item.address1 }} {{ item.address2 }} {{ item.building }}</span>
-                                </p>
-                                <p v-if="item.phonePartner" class="flex items-center text-slate-600">
-                                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0"></i>
-                                    <span>現地担当者: <strong>{{ item.phonePartner }}</strong></span>
-                                </p>
-                            </div>
-
-                            <!-- Remarks / Field Note -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center justify-between">
-                                    <span>現地作業メモ・連絡事項 (J)</span>
-                                    <span class="text-[10px] text-slate-400">リアルタイム自動保存</span>
-                                </label>
-                                <textarea 
-                                    v-model="item.remarks" 
-                                    @blur="saveItemToFirestore(item)"
-                                    rows="2" 
-                                    placeholder="作業内容、特記事項を入力..." 
-                                    class="w-full text-xs p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
-                                </textarea>
-                            </div>
-
-                            <!-- Field Photo Upload (Up to 20 images) -->
-                            <div class="bg-brand-50/60 p-3 rounded-xl border border-brand-200 space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-xs font-bold text-brand-900 flex items-center space-x-1">
-                                        <i data-lucide="camera" class="w-4 h-4 text-brand-600"></i>
-                                        <span>現地写真・調査資料 (最大20枚)</span>
-                                    </span>
-                                    <span class="text-[10px] text-brand-700 font-semibold">{{ (item.surveyDocs || []).length }} / 20 枚</span>
-                                </div>
-
+                        <!-- Upload Button -->
+                        <div class="flex items-center space-x-2">
+                            <label class="cursor-pointer bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow inline-flex items-center space-x-1.5 transition">
+                                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                <span>写真撮影 / 選択</span>
                                 <input 
                                     type="file" 
                                     multiple 
-                                    accept="image/*,.pdf"
+                                    accept="image/*,.pdf" 
                                     @change="handleFileUpload($event, item)" 
-                                    class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-brand-600 file:text-white hover:file:bg-brand-700">
+                                    class="hidden">
+                            </label>
+                            <span class="text-[10px] text-slate-500">※自動圧縮保存されます</span>
+                        </div>
 
-                                <!-- Uploaded Photo Thumbnails List -->
-                                <div v-if="item.surveyDocs && item.surveyDocs.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-                                    <div 
-                                        v-for="(doc, idx) in item.surveyDocs" 
-                                        :key="idx" 
-                                        class="bg-white p-2 rounded-lg border border-slate-200 flex items-center justify-between text-xs space-x-1">
-                                        <a :href="doc.url" target="_blank" class="truncate font-medium text-brand-600 underline text-[11px] flex-1">
-                                            {{ doc.name }}
-                                        </a>
-                                        <button @click="removeFile(item, idx)" class="text-rose-500 p-1 hover:bg-rose-50 rounded">
-                                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                    </div>
+                        <!-- Thumbnails Grid -->
+                        <div v-if="item.surveyDocs && item.surveyDocs.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                            <div 
+                                v-for="(doc, idx) in item.surveyDocs" 
+                                :key="doc.id || idx"
+                                class="bg-white border border-slate-200 rounded-lg p-1.5 flex flex-col justify-between">
+                                
+                                <div @click="openDocPreview(doc)" class="cursor-pointer aspect-video bg-slate-100 rounded overflow-hidden flex items-center justify-center mb-1">
+                                    <img v-if="doc.url && doc.url.startsWith('data:image')" :src="doc.url" class="w-full h-full object-cover">
+                                    <i v-else data-lucide="file-text" class="w-6 h-6 text-slate-400"></i>
                                 </div>
-                            </div>
 
-                            <!-- Key Schedule Inputs (Mobile Compact Layout) -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-slate-100">
-                                <div>
-                                    <label class="block font-medium text-slate-600 mb-1">調査日時 (N)</label>
-                                    <input 
-                                        v-model="item.surveyDate" 
-                                        @change="saveItemToFirestore(item)"
-                                        type="datetime-local" 
-                                        class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
-                                </div>
-                                <div>
-                                    <label class="block font-medium text-slate-600 mb-1">日程連絡日 (S)</label>
-                                    <input 
-                                        v-model="item.scheduleNoticeDate" 
-                                        @change="saveItemToFirestore(item)"
-                                        type="datetime-local" 
-                                        class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white">
-                                </div>
-                                <div class="sm:col-span-2">
-                                    <label class="block font-bold text-emerald-800 mb-1">作業完了日時 (T)</label>
-                                    <input 
-                                        v-model="item.completionDate" 
-                                        @change="saveItemToFirestore(item)"
-                                        type="datetime-local" 
-                                        class="w-full p-2 border border-emerald-400 bg-emerald-50 rounded-lg text-xs font-bold text-emerald-900">
+                                <div class="flex justify-between items-center text-[10px]">
+                                    <span class="truncate font-medium text-slate-700 max-w-[80px]">{{ doc.name }}</span>
+                                    <button @click="removeFile(item, idx)" class="text-rose-500 hover:text-rose-700 p-0.5">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Card Footer Action Toolbar -->
-                        <div class="p-3 bg-slate-100 border-t border-slate-200 flex items-center justify-between gap-2">
-                            <button 
-                                @click="toggleCompletion(item)" 
-                                :class="item.completionDate ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-600 hover:bg-emerald-700'"
-                                class="flex-1 text-white text-xs py-2.5 rounded-xl font-bold transition flex items-center justify-center space-x-1.5 shadow-sm active:scale-[0.98]">
-                                <i :data-lucide="item.completionDate ? 'rotate-ccw' : 'check-circle'" class="w-4 h-4"></i>
-                                <span>{{ item.completionDate ? '完了状態を取り消す' : '作業完了を報告する' }}</span>
-                            </button>
-
-                            <!-- LINE Share Quick Button -->
-                            <a 
-                                :href="'https://line.me/R/msg/text/?' + encodeURIComponent('【作業報告】\n店舗名: ' + (item.storeName || '') + '\nNO.' + item.no + '\nステータス: ' + calculateStatus(item) + '\n完了日時: ' + (item.completionDate || '未完了'))" 
-                                target="_blank" 
-                                class="bg-line hover:opacity-90 text-white font-bold text-xs px-3 py-2.5 rounded-xl flex items-center justify-center space-x-1 shadow-sm transition active:scale-[0.98]"
-                                title="LINEで現場報告を共有">
-                                <i data-lucide="share-2" class="w-4 h-4"></i>
-                                <span class="hidden sm:inline">LINE共有</span>
-                            </a>
+                    <!-- Date Schedule Fields -->
+                    <div class="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                            <label class="block text-slate-500 mb-1">調査日時 (N)</label>
+                            <input v-model="item.surveyDate" @change="saveData" type="datetime-local" class="w-full p-2 border border-slate-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-1">日程連絡日 (S)</label>
+                            <input v-model="item.scheduleNoticeDate" @change="saveData" type="datetime-local" class="w-full p-2 border border-slate-300 rounded-lg">
                         </div>
                     </div>
 
-                    <!-- Empty State for Worker -->
-                    <div v-if="myWorkItems.length === 0" class="bg-white p-10 rounded-2xl border border-slate-200 text-center text-slate-400 space-y-3">
-                        <i data-lucide="hard-hat" class="w-12 h-12 mx-auto text-slate-300"></i>
-                        <p class="font-bold text-slate-700">現在割り振られた作業案件はありません</p>
-                        <p class="text-xs text-slate-400">ヘッダーの担当者を切り替えるか、コール画面で作業担当をアサインしてください。</p>
+                    <!-- Work Complete Section -->
+                    <div class="pt-2 border-t border-slate-100">
+                        <label class="block text-xs font-bold text-emerald-800 mb-1">作業完了日時 (T)</label>
+                        <input v-model="item.workCompletedDate" @change="saveData" type="datetime-local" class="w-full text-xs p-2.5 border border-emerald-300 bg-emerald-50/50 rounded-lg text-emerald-900 font-bold focus:ring-2 focus:ring-emerald-500">
                     </div>
+
+                    <button 
+                        @click="completeWorkField(item)" 
+                        class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm py-3 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                        <span>作業完了を報告する</span>
+                    </button>
+                </div>
+
+                <div v-if="workerAssignedItems.length === 0" class="bg-white p-8 rounded-xl text-center text-slate-400 border border-slate-200">
+                    該当する担当案件がありません
                 </div>
             </section>
         </main>
 
-        <!-- ADMIN TOOL MODAL (With CSV/Excel Import, User Management, Audit Logs) -->
-        <div v-if="showAdminToolModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl relative space-y-5 max-h-[90vh] flex flex-col">
-                <button @click="showAdminToolModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-
-                <div class="flex items-center space-x-3 shrink-0">
-                    <div class="bg-slate-900 p-3 rounded-xl text-white">
-                        <i data-lucide="wrench" class="w-6 h-6 text-brand-400"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-slate-800 text-base">管理者用統合ツール</h3>
-                        <p class="text-xs text-slate-500">アカウント管理、データインポート、システム更新履歴</p>
-                    </div>
-                </div>
-
-                <!-- Admin Tabs Nav -->
-                <div class="flex border-b border-slate-200 space-x-2 shrink-0">
-                    <button 
-                        @click="adminTab = 'users'" 
-                        :class="adminTab === 'users' ? 'border-brand-600 text-brand-600 font-bold bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'" 
-                        class="py-2 px-4 text-xs border-b-2 transition flex items-center space-x-1.5 rounded-t-lg">
-                        <i data-lucide="users" class="w-4 h-4"></i>
-                        <span>担当者アカウント管理</span>
-                        <span class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-normal">{{ usersList.length }}</span>
-                    </button>
-                    <button 
-                        @click="adminTab = 'logs'" 
-                        :class="adminTab === 'logs' ? 'border-brand-600 text-brand-600 font-bold bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'" 
-                        class="py-2 px-4 text-xs border-b-2 transition flex items-center space-x-1.5 rounded-t-lg">
-                        <i data-lucide="history" class="w-4 h-4"></i>
-                        <span>更新履歴ログ</span>
-                        <span class="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-normal">{{ logsList.length }}</span>
-                    </button>
-                    <button 
-                        @click="adminTab = 'import'" 
-                        :class="adminTab === 'import' ? 'border-brand-600 text-brand-600 font-bold bg-brand-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'" 
-                        class="py-2 px-4 text-xs border-b-2 transition flex items-center space-x-1.5 rounded-t-lg">
-                        <i data-lucide="file-up" class="w-4 h-4"></i>
-                        <span>データ一括操作</span>
+        <!-- IMAGE PREVIEW LIGHTBOX MODAL -->
+        <div v-if="previewDocModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4" @click.self="previewDocModal = null">
+            <div class="bg-white rounded-2xl max-w-3xl w-full p-4 shadow-2xl relative flex flex-col max-h-[90vh]">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-200">
+                    <h3 class="font-bold text-slate-800 text-sm truncate max-w-md">{{ previewDocModal.name }}</h3>
+                    <button @click="previewDocModal = null" class="text-slate-400 hover:text-slate-600 p-1">
+                        <i data-lucide="x" class="w-6 h-6"></i>
                     </button>
                 </div>
-
-                <!-- Admin Tab Contents -->
-                <div class="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-1">
-
-                    <!-- TAB 1: USER MANAGEMENT -->
-                    <div v-if="adminTab === 'users'" class="space-y-4">
-                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span class="text-xs font-bold text-slate-700">システム利用担当者一覧</span>
-                            <button 
-                                @click="openUserEditModal(null)" 
-                                class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1 shadow-sm">
-                                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
-                                <span>新規アカウント作成</span>
-                            </button>
-                        </div>
-
-                        <!-- User List Table -->
-                        <div class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 text-slate-600 font-semibold border-b">
-                                    <tr>
-                                        <th class="p-2.5">社名</th>
-                                        <th class="p-2.5">担当者名</th>
-                                        <th class="p-2.5">権限区分</th>
-                                        <th class="p-2.5">ログインID</th>
-                                        <th class="p-2.5">パスワード</th>
-                                        <th class="p-2.5">ステータス</th>
-                                        <th class="p-2.5 text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="user in usersList" :key="user.id" class="hover:bg-slate-50">
-                                        <td class="p-2.5 font-medium text-slate-700">{{ user.company || '-' }}</td>
-                                        <td class="p-2.5 font-bold text-slate-800">{{ user.name }}</td>
-                                        <td class="p-2.5">
-                                            <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium text-[11px]">
-                                                {{ getRoleLabel(user.role) }}
-                                            </span>
-                                        </td>
-                                        <td class="p-2.5 font-mono text-brand-600 font-bold">{{ user.id }}</td>
-                                        <td class="p-2.5 font-mono text-slate-500">{{ user.pw }}</td>
-                                        <td class="p-2.5">
-                                            <span 
-                                                :class="{
-                                                    'bg-emerald-100 text-emerald-800 border-emerald-300': user.status === '有効',
-                                                    'bg-rose-100 text-rose-800 border-rose-300': user.status === '無効',
-                                                    'bg-amber-100 text-amber-800 border-amber-300': user.status === '未設定'
-                                                }"
-                                                class="px-2 py-0.5 rounded-full text-[10px] border font-medium">
-                                                {{ user.status || '有効' }}
-                                            </span>
-                                        </td>
-                                        <td class="p-2.5 text-center space-x-1">
-                                            <button @click="openUserEditModal(user)" class="p-1 text-brand-600 hover:bg-brand-50 rounded" title="編集">
-                                                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                            </button>
-                                            <button v-if="user.id !== 'admin'" @click="deleteUserAccount(user)" class="p-1 text-rose-600 hover:bg-rose-50 rounded" title="削除">
-                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="usersList.length === 0">
-                                        <td colspan="7" class="p-6 text-center text-slate-400">登録済みアカウントがありません</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- User Add/Edit Inline Form Area -->
-                        <div v-if="showUserForm" class="bg-brand-50/60 p-4 rounded-xl border border-brand-200 space-y-3">
-                            <h4 class="font-bold text-xs text-brand-900 flex items-center space-x-1">
-                                <i data-lucide="user-cog" class="w-4 h-4 text-brand-600"></i>
-                                <span>{{ editingUserIsNew ? '新規アカウント登録' : 'アカウント情報の変更' }}</span>
-                            </h4>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">社名</label>
-                                    <input v-model="userForm.company" type="text" placeholder="例: 自社, 〇〇工事" class="w-full text-xs p-2 border rounded-lg">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">担当者名</label>
-                                    <input v-model="userForm.name" type="text" placeholder="例: 山田 太郎" required class="w-full text-xs p-2 border rounded-lg">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">権限区分</label>
-                                    <select v-model="userForm.role" class="w-full text-xs p-2 border rounded-lg bg-white">
-                                        <option value="admin">管理者</option>
-                                        <option value="caller">コール担当</option>
-                                        <option value="field">作業担当</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">ログイン ID</label>
-                                    <input v-model="userForm.id" :disabled="!editingUserIsNew" type="text" placeholder="IDを入力" required class="w-full text-xs p-2 border rounded-lg font-mono disabled:bg-slate-100">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">パスワード</label>
-                                    <input v-model="userForm.pw" type="text" placeholder="PWを入力" required class="w-full text-xs p-2 border rounded-lg font-mono">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-700 mb-1">ステータス</label>
-                                    <select v-model="userForm.status" class="w-full text-xs p-2 border rounded-lg bg-white">
-                                        <option value="有効">有効</option>
-                                        <option value="無効">無効</option>
-                                        <option value="未設定">未設定</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex justify-end space-x-2 pt-1">
-                                <button @click="showUserForm = false" type="button" class="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg">キャンセル</button>
-                                <button @click="saveUserAccount" type="button" class="bg-brand-600 hover:bg-brand-700 text-white text-xs px-4 py-1.5 rounded-lg font-bold">保存する</button>
-                            </div>
-                        </div>
+                
+                <div class="flex-1 overflow-auto py-4 flex items-center justify-center bg-slate-950/5 rounded-xl mt-3">
+                    <img 
+                        v-if="previewDocModal.url && previewDocModal.url.startsWith('data:image')" 
+                        :src="previewDocModal.url" 
+                        class="max-w-full max-h-[70vh] object-contain rounded-lg shadow">
+                    
+                    <div v-else class="text-center p-8 text-slate-500 space-y-3">
+                        <i data-lucide="file-text" class="w-12 h-12 mx-auto text-slate-400"></i>
+                        <p class="text-sm font-semibold">プレビュー可能フォーマットです</p>
+                        <a :href="previewDocModal.url" download class="inline-block bg-brand-600 text-white text-xs px-4 py-2 rounded-lg font-bold">ファイルを保存</a>
                     </div>
-
-                    <!-- TAB 2: AUDIT LOGS -->
-                    <div v-if="adminTab === 'logs'" class="space-y-3">
-                        <div class="flex justify-between items-center text-xs text-slate-500">
-                            <span>システム内の案件・アカウント変更履歴ログ（直近最大100件）</span>
-                        </div>
-                        <div class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 text-slate-600 font-semibold border-b">
-                                    <tr>
-                                        <th class="p-2.5 whitespace-nowrap">日時</th>
-                                        <th class="p-2.5 whitespace-nowrap">操作者</th>
-                                        <th class="p-2.5 whitespace-nowrap">操作分類</th>
-                                        <th class="p-2.5">変更詳細内容</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr v-for="log in logsList" :key="log.id" class="hover:bg-slate-50">
-                                        <td class="p-2.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">{{ log.timestamp }}</td>
-                                        <td class="p-2.5 whitespace-nowrap font-bold text-slate-800">{{ log.operator }}</td>
-                                        <td class="p-2.5 whitespace-nowrap">
-                                            <span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[10px] font-medium border border-slate-200">
-                                                {{ log.action }}
-                                            </span>
-                                        </td>
-                                        <td class="p-2.5 text-slate-700">{{ log.details }}</td>
-                                    </tr>
-                                    <tr v-if="logsList.length === 0">
-                                        <td colspan="4" class="p-6 text-center text-slate-400">更新履歴ログはありません</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- TAB 3: IMPORT & CLEAR -->
-                    <div v-if="adminTab === 'import'" class="space-y-3 pt-1">
-                        <div class="bg-brand-50/70 p-4 rounded-xl border border-brand-200 space-y-3">
-                            <div class="flex items-center space-x-2 text-brand-900">
-                                <i data-lucide="file-up" class="w-5 h-5 text-brand-600"></i>
-                                <h4 class="font-bold text-xs">全データ一括インポート（CSV & Excel対応）</h4>
-                            </div>
-                            <p class="text-[11px] text-slate-600 leading-relaxed">
-                                カラムA〜T列形式の <strong>.csv</strong> または <strong>.xlsx / .xls (Excel)</strong> ファイルを一括で読み込んでFirestoreクラウドデータベースに反映します。
-                            </p>
-
-                            <div class="flex items-center justify-center border-2 border-dashed border-brand-300 hover:border-brand-500 rounded-xl p-4 bg-white cursor-pointer transition">
-                                <label class="w-full text-center cursor-pointer space-y-1">
-                                    <i data-lucide="upload-cloud" class="w-8 h-8 mx-auto text-brand-500"></i>
-                                    <span class="text-xs font-bold text-brand-700 block">CSV / Excel ファイルを選択</span>
-                                    <span class="text-[10px] text-slate-400 block">.csv, .xlsx, .xls フォーマットに対応</span>
-                                    <input type="file" @change="handleBulkImport" accept=".csv, .xlsx, .xls" class="hidden">
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Clear All Data (Danger) -->
-                        <div class="bg-rose-50 p-3.5 rounded-xl border border-rose-200 flex justify-between items-center">
-                            <div>
-                                <span class="text-xs font-bold text-rose-800 block">全データ初期化</span>
-                                <span class="text-[10px] text-rose-600">現在登録されている全データを削除します</span>
-                            </div>
-                            <button 
-                                @click="confirmClearAllData" 
-                                class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-1.5 rounded-lg font-bold shadow">
-                                全削除
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="pt-2 shrink-0 border-t border-slate-100">
-                    <button 
-                        @click="showAdminToolModal = false" 
-                        class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs py-2.5 rounded-lg font-bold shadow">
-                        閉じる
-                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- NOTIFICATION TOAST -->
-        <transition enter-active-class="transform transition ease-out duration-300" enter-from-class="translate-y-2 opacity-0" enter-to-class="translate-y-0 opacity-100" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100" leave-to-class="opacity-0">
-            <div v-if="toastMessage" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-xl flex items-center space-x-2 border border-slate-700">
-                <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
-                <span>{{ toastMessage }}</span>
+        <!-- ADMIN TOOLS MODAL -->
+        <div v-if="showAdminToolModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-6">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center space-x-2">
+                        <i data-lucide="settings" class="w-5 h-5 text-brand-600"></i>
+                        <span>システム管理ツール</span>
+                    </h2>
+                    <button @click="showAdminToolModal = false" class="text-slate-400 hover:text-slate-600">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4 text-xs">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-1">CSV / Excel データ一括インポート</h3>
+                        <p class="text-slate-400 text-[11px] mb-3">（NO、店番、カテゴリ、店名、住所1, 住所2, 建物名, 携帯番号, 運営... に対応）</p>
+                        <input type="file" accept=".csv,.xlsx,.xls" @change="handleImportExcelCsv" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white">
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-slate-700">全案件データのエクスポート (Excel)</h3>
+                            <p class="text-slate-400 text-[11px]">最新の登録案件をExcelファイル (.xlsx) として出力します</p>
+                        </div>
+                        <button @click="exportToExcel" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg shadow">
+                            エクスポート
+                        </button>
+                    </div>
+
+                    <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 flex justify-between items-center">
+                        <div>
+                            <h3 class="font-bold text-rose-800">全データリセット</h3>
+                            <p class="text-rose-600 text-[11px]">全てのデータを初期サンプル状態に戻します</p>
+                        </div>
+                        <button @click="triggerResetConfirm" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-4 rounded-lg shadow">
+                            リセット実行
+                        </button>
+                    </div>
+                </div>
             </div>
-        </transition>
+        </div>
+
+        <!-- CUSTOM ALERT / TOAST MODAL -->
+        <div v-if="toastMessage" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center space-x-3 border border-slate-700 animate-bounce">
+            <i data-lucide="info" class="w-5 h-5 text-brand-400"></i>
+            <span class="text-xs font-bold">{{ toastMessage }}</span>
+            <button @click="toastMessage = ''" class="text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <!-- CONFIRMATION MODAL -->
+        <div v-if="confirmDialog.show" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+                <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full mx-auto flex items-center justify-center">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">{{ confirmDialog.title }}</h3>
+                <p class="text-xs text-slate-500">{{ confirmDialog.message }}</p>
+                <div class="flex space-x-3 pt-2">
+                    <button @click="confirmDialog.show = false" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 rounded-xl">
+                        キャンセル
+                    </button>
+                    <button @click="executeConfirmAction" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs py-2.5 rounded-xl shadow">
+                        実行する
+                    </button>
+                </div>
+            </div>
+        </div>
 
     </div>
 
     <!-- FIREBASE MODULE & VUE APP LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            doc, 
-            setDoc, 
-            addDoc,
-            deleteDoc, 
-            onSnapshot, 
-            getDocs 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const defaultFirebaseConfig = {
-            apiKey: "AIzaSyB5sxwZCHk76WPMDa7X-2S3OYdsjvAL9u8",
-            authDomain: "zetcrm.firebaseapp.com",
-            projectId: "zetcrm",
-            storageBucket: "zetcrm.firebasestorage.app",
-            messagingSenderId: "595277424644",
-            appId: "1:595277424644:web:17d0538dcdf0c151c3ad51"
-        };
+        // Global Firebase Configuration Handling
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'zet-crm-app';
+        let firebaseConfig = null;
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
+            } catch (e) {
+                console.warn('Firebase config parse error:', e);
+            }
+        }
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
-        const fbApp = initializeApp(firebaseConfig);
-        const auth = getAuth(fbApp);
-        const db = getFirestore(fbApp);
+        let db = null;
+        let auth = null;
 
-        // App ID for Firestore Rule 1 compliance
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'zetcrm-app';
+        if (firebaseConfig) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+            } catch (e) {
+                console.warn('Firebase init error:', e);
+            }
+        }
 
-        const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+        const { createApp } = Vue;
 
-        createApp({
-            setup() {
-                // Auth & Role State
-                const isLoggedIn = ref(false);
-                const isCloudConnected = ref(false);
-                const currentUser = ref({ id: '', name: '', role: '', company: '' });
-                
-                const loginForm = ref({ id: '', password: '' });
-                const loginError = ref('');
+        const app = createApp({
+            data() {
+                return {
+                    isLoggedIn: true,
+                    isCloudConnected: false,
+                    currentUser: { id: 'admin', name: '管理者', role: 'admin' },
+                    loginForm: { id: '', password: '' },
+                    loginError: '',
+                    
+                    currentTab: 'call', // 'call', 'dashboard', 'field'
+                    searchQuery: '',
+                    filterStatus: 'ALL',
+                    selectedWorkerFilter: '',
+                    
+                    selectedItem: null,
+                    showAdminToolModal: false,
+                    previewDocModal: null,
 
-                // App Navigation Tabs & Admin Tabs
-                const currentTab = ref('call');
-                const adminTab = ref('users'); // 'users' | 'logs' | 'import'
-                
-                // Admin Tool Modal State & User Form
-                const showAdminToolModal = ref(false);
-                const showUserForm = ref(false);
-                const editingUserIsNew = ref(true);
-                const userForm = ref({
-                    company: '',
-                    name: '',
-                    role: 'field',
-                    id: '',
-                    pw: '',
-                    status: '有効'
-                });
+                    toastMessage: '',
+                    confirmDialog: { show: false, title: '', message: '', action: null },
 
-                // User Accounts and Audit Logs Data (Firestore)
-                const usersList = ref([]);
-                const logsList = ref([]);
+                    workerList: ['加藤', '小瀬', '勝呂', '山田', '佐藤'],
 
-                // Search & Filter & Sorting State
-                const searchQuery = ref('');
-                const filterStatus = ref('ALL');
-                const selectedItem = ref(null);
-                const sortKey = ref('no');
-                const sortOrder = ref('asc');
-                
-                // Field Worker State
-                const currentWorker = ref('須黒');
-                
-                // Toast Notification
-                const toastMessage = ref('');
-                
-                // All Records Dataset (Realtime from Firestore)
-                const items = ref([]);
-
-                let chartInstance = null;
-
-                // Dynamic Worker List Computed from Users List
-                const workerList = computed(() => {
-                    const fields = usersList.value.filter(u => u.role === 'field' && u.status === '有効').map(u => u.name);
-                    return fields.length > 0 ? fields : ['須黒', '佐藤', '田中', '山本', '比嘉(吉原)', '比嘉(栗木)'];
-                });
-
-                // Safe Lucide Icon Renderer Helper
-                const renderIcons = () => {
-                    if (typeof lucide !== 'undefined' && lucide.createIcons) {
-                        lucide.createIcons();
-                    }
-                };
-
-                // Login Handler
-                const handleLogin = () => {
-                    loginError.value = '';
-                    const inputId = loginForm.value.id.trim();
-                    const inputPw = loginForm.value.password;
-
-                    // Search matching active user from usersList or fallback default admin
-                    let match = usersList.value.find(u => u.id === inputId && u.pw === inputPw && u.status === '有効');
-
-                    // Default hardcoded Fallback for admin if not loaded yet
-                    if (!match && inputId === 'admin' && inputPw === 'admin') {
-                        match = { id: 'admin', pw: 'admin', name: '管理者', role: 'admin', company: '自社', status: '有効' };
-                    }
-
-                    if (match) {
-                        currentUser.value = { id: match.id, name: match.name, role: match.role, company: match.company || '' };
-                        isLoggedIn.value = true;
-                        
-                        // Auto Tab Selection Logic
-                        if (match.role === 'admin') {
-                            currentTab.value = 'dashboard';
-                        } else if (match.role === 'caller') {
-                            currentTab.value = 'call';
-                        } else if (match.role === 'field') {
-                            currentTab.value = 'field';
-                            currentWorker.value = match.name;
+                    items: [
+                        {
+                            id: 'sample-1',
+                            no: '66',
+                            storeNo: '129006',
+                            category: 'ビルトイン',
+                            storeName: '名古屋セントラルパーク店',
+                            address1: '愛知県名古屋市中区',
+                            address2: '錦3-15-13',
+                            building: 'セントラルパーク地下街',
+                            mobilePhone: '09012345678',
+                            operation: '直営',
+                            remarks: '現地調査完了。部材手配待ち。',
+                            phonePartner: '加藤',
+                            surveyAssignee: '小瀬',
+                            surveyDate: '2026-09-23T10:30',
+                            surveyDocs: [],
+                            replaceRequestDate: '',
+                            productArrangeDate: '',
+                            workAssignee: '加藤',
+                            scheduleNoticeDate: '2026-09-25T17:26',
+                            workCompletedDate: ''
+                        },
+                        {
+                            id: 'sample-2',
+                            no: '67',
+                            storeNo: '129007',
+                            category: 'フードコート',
+                            storeName: '横浜みなとみらい店',
+                            address1: '神奈川県横浜市西区',
+                            address2: 'みなとみらい2-3-2',
+                            building: 'クイーンズスクエア',
+                            mobilePhone: '08098765432',
+                            operation: 'FC',
+                            remarks: '作業日程の最終調整中',
+                            phonePartner: '佐藤',
+                            surveyAssignee: '山田',
+                            surveyDate: '2026-09-20T14:00',
+                            surveyDocs: [],
+                            replaceRequestDate: '2026-09-21T11:00',
+                            productArrangeDate: '2026-09-22T15:00',
+                            workAssignee: '勝呂',
+                            scheduleNoticeDate: '2026-09-24T09:00',
+                            workCompletedDate: ''
                         }
+                    ],
+                    chartInstance: null
+                };
+            },
 
-                        showNotification(`ログイン成功: ${match.name} 様`);
-                        loginForm.value = { id: '', password: '' };
-                        
-                        nextTick(() => {
-                            renderIcons();
-                            if (currentTab.value === 'dashboard') initStatusChart();
+            computed: {
+                filteredItems() {
+                    return this.items.filter(item => {
+                        const status = this.calculateStatus(item);
+                        const matchesStatus = this.filterStatus === 'ALL' || status === this.filterStatus;
+                        const query = this.searchQuery.toLowerCase();
+                        const matchesQuery = !query || 
+                            (item.storeName && item.storeName.toLowerCase().includes(query)) ||
+                            (item.no && item.no.toString().includes(query)) ||
+                            (item.address1 && item.address1.toLowerCase().includes(query)) ||
+                            (item.phonePartner && item.phonePartner.toLowerCase().includes(query)) ||
+                            (item.mobilePhone && item.mobilePhone.includes(query));
+                        return matchesStatus && matchesQuery;
+                    });
+                },
+
+                workerAssignedItems() {
+                    if (!this.selectedWorkerFilter) return this.items;
+                    return this.items.filter(item => item.workAssignee === this.selectedWorkerFilter);
+                }
+            },
+
+            watch: {
+                currentTab(newTab) {
+                    if (newTab === 'dashboard') {
+                        this.$nextTick(() => {
+                            this.renderChart();
                         });
-                    } else {
-                        loginError.value = 'ID、パスワードが一致しないか、アカウントが無効です';
                     }
-                };
+                }
+            },
 
-                const handleLogout = () => {
-                    isLoggedIn.value = false;
-                    currentUser.value = { id: '', name: '', role: '', company: '' };
-                    showNotification('ログアウトしました');
-                };
+            mounted() {
+                this.loadLocalData();
+                if (this.items.length > 0) {
+                    this.selectedItem = this.items[0];
+                }
+                this.initCloudFirestore();
 
-                const getRoleLabel = (role) => {
-                    if (role === 'admin') return '管理者';
-                    if (role === 'caller') return 'コール担当';
-                    if (role === 'field') return '作業担当';
-                    return '';
-                };
+                this.$nextTick(() => {
+                    if (window.lucide) window.lucide.createIcons();
+                });
+            },
 
-                const canAccessTab = (tab) => {
-                    if (!isLoggedIn.value) return false;
-                    const role = currentUser.value.role;
-                    if (role === 'admin') return true;
-                    if (role === 'caller') return tab === 'call' || tab === 'field';
-                    if (role === 'field') return tab === 'field';
-                    return false;
-                };
+            updated() {
+                this.$nextTick(() => {
+                    if (window.lucide) window.lucide.createIcons();
+                });
+            },
 
-                // 日付・日時文字列として妥当かチェック（誤インポートされた単なる数値「1」「10」等を除外）
-                const isValidDate = (val) => {
-                    if (!val) return false;
-                    const str = String(val).trim();
-                    if (!str) return false;
-                    // 単なる数字のみ（例: "1", "10", "100"など）は日付データではないため無視
-                    if (/^\d+$/.test(str)) return false;
-                    return true;
-                };
+            methods: {
+                showToast(msg) {
+                    this.toastMessage = msg;
+                    setTimeout(() => {
+                        if (this.toastMessage === msg) this.toastMessage = '';
+                    }, 4000);
+                },
 
-                // Dynamic Status Calculation Logic
-                const calculateStatus = (item) => {
-                    if (!item) return '未対応';
-                    if (isValidDate(item.completionDate)) return '完了';
-                    if (isValidDate(item.scheduleNoticeDate) || item.workAssignee) return '作業日時確定';
-                    if (isValidDate(item.productArrangeDate) || isValidDate(item.replaceRequestDate)) return '置き換え手配済';
-                    if (item.surveyDocs && item.surveyDocs.length > 0) return '資料回収完了';
-                    if (isValidDate(item.surveyDate)) return '調査日時確定';
-                    if (item.phonePartner) return '電話対応中';
-                    return '未対応';
-                };
+                handleLogin() {
+                    if (this.loginForm.id === 'admin' && this.loginForm.password === 'admin') {
+                        this.currentUser = { id: 'admin', name: '管理者', role: 'admin' };
+                        this.isLoggedIn = true;
+                        this.loginError = '';
+                        this.showToast('管理者としてログインしました');
+                    } else if (this.loginForm.id) {
+                        this.currentUser = { id: this.loginForm.id, name: this.loginForm.id, role: 'staff' };
+                        this.isLoggedIn = true;
+                        this.loginError = '';
+                        this.showToast(`${this.loginForm.id} 様としてログインしました`);
+                    } else {
+                        this.loginError = 'IDまたはパスワードが正しくありません。';
+                    }
+                },
 
-                const initFirestoreSync = async () => {
+                handleLogout() {
+                    this.isLoggedIn = false;
+                    this.showToast('ログアウトしました');
+                },
+
+                getRoleLabel(role) {
+                    return role === 'admin' ? '管理者' : '作業担当';
+                },
+
+                // Cloud Sync Initialization (Firestore)
+                async initCloudFirestore() {
+                    if (!db || !auth) return;
                     try {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
@@ -1347,187 +1084,160 @@
                             await signInAnonymously(auth);
                         }
 
-                        // Collection Paths Rule 1 Compliance:
-                        // 1. Customers Collection
-                        const customersRef = collection(db, 'artifacts', appId, 'public', 'data', 'customers');
-                        onSnapshot(customersRef, (snapshot) => {
-                            const fetched = [];
-                            snapshot.forEach((doc) => {
-                                fetched.push({ id: doc.id, ...doc.data() });
-                            });
-                            if (fetched.length > 0) {
-                                items.value = fetched.sort((a, b) => parseInt(a.no || 0) - parseInt(b.no || 0));
-                            }
-                            isCloudConnected.value = true;
-
-                            if (selectedItem.value) {
-                                const refreshed = items.value.find(i => i.id === selectedItem.value.id);
-                                if (refreshed) selectedItem.value = refreshed;
-                            } else if (items.value.length > 0) {
-                                selectedItem.value = items.value[0];
-                            }
-
-                            if (currentTab.value === 'dashboard') {
-                                nextTick(() => initStatusChart());
+                        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'crm_items');
+                        onSnapshot(colRef, (snapshot) => {
+                            if (!snapshot.empty) {
+                                const cloudItems = [];
+                                snapshot.forEach(docSnap => {
+                                    cloudItems.push({ id: docSnap.id, ...docSnap.data() });
+                                });
+                                this.items = cloudItems;
+                                if (!this.selectedItem && this.items.length > 0) {
+                                    this.selectedItem = this.items[0];
+                                }
+                                this.isCloudConnected = true;
                             }
                         }, (err) => {
-                            console.warn("Firestore customers sync warning:", err);
-                            isCloudConnected.value = false;
+                            console.warn('Firestore snapshot listener offline:', err);
+                            this.isCloudConnected = false;
                         });
-
-                        // 2. Users Collection Sync
-                        const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-                        onSnapshot(usersRef, (snapshot) => {
-                            const fetchedUsers = [];
-                            snapshot.forEach((doc) => {
-                                fetchedUsers.push({ docId: doc.id, ...doc.data() });
-                            });
-
-                            if (fetchedUsers.length === 0) {
-                                const defaultAdmin = {
-                                    id: 'admin',
-                                    pw: 'admin',
-                                    name: '管理者',
-                                    role: 'admin',
-                                    company: '自社',
-                                    status: '有効'
-                                };
-                                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', 'user_admin'), defaultAdmin).catch(() => {});
-                            } else {
-                                usersList.value = fetchedUsers;
-                            }
-                        }, (err) => {
-                            console.warn("Firestore users sync warning:", err);
-                        });
-
-                        // 3. Audit Logs Collection Sync
-                        const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
-                        onSnapshot(logsRef, (snapshot) => {
-                            const fetchedLogs = [];
-                            snapshot.forEach((doc) => {
-                                fetchedLogs.push({ id: doc.id, ...doc.data() });
-                            });
-                            logsList.value = fetchedLogs.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, 100);
-                        }, (err) => {
-                            console.warn("Firestore logs sync warning:", err);
-                        });
-
                     } catch (e) {
-                        console.warn("Auth / Firestore Init Error (running in local fallback mode):", e);
-                        isCloudConnected.value = false;
+                        console.warn('Cloud Auth / Sync init fallback:', e);
+                        this.isCloudConnected = false;
                     }
-                };
+                },
 
-                // Audit Logger Helper
-                const addAuditLog = async (action, details) => {
-                    try {
-                        const now = new Date();
-                        const timeStr = now.getFullYear() + '/' + 
-                            String(now.getMonth() + 1).padStart(2, '0') + '/' + 
-                            String(now.getDate()).padStart(2, '0') + ' ' + 
-                            String(now.getHours()).padStart(2, '0') + ':' + 
-                            String(now.getMinutes()).padStart(2, '0');
-                        
-                        const logData = {
-                            timestamp: timeStr,
-                            operator: currentUser.value.name || 'システム',
-                            action: action,
-                            details: details
-                        };
-                        const logsRef = collection(db, 'artifacts', appId, 'public', 'data', 'logs');
-                        await addDoc(logsRef, logData);
-                    } catch (err) {
-                        console.warn("Failed to record audit log to cloud:", err);
-                    }
-                };
+                // File Upload & Canvas Compression for Speed & Storage Efficiency
+                async handleFileUpload(event, targetItem) {
+                    const files = Array.from(event.target.files || []);
+                    if (!files.length || !targetItem) return;
 
-                // User Account CRUD
-                const openUserEditModal = (user) => {
-                    if (user) {
-                        editingUserIsNew.value = false;
-                        userForm.value = { ...user };
-                    } else {
-                        editingUserIsNew.value = true;
-                        userForm.value = {
-                            company: '',
-                            name: '',
-                            role: 'field',
-                            id: '',
-                            pw: '',
-                            status: '有効'
-                        };
+                    if (!targetItem.surveyDocs) {
+                        targetItem.surveyDocs = [];
                     }
-                    showUserForm.value = true;
-                };
 
-                const saveUserAccount = async () => {
-                    if (!userForm.value.id || !userForm.value.pw || !userForm.value.name) {
-                        showNotification('名前・ID・PWは必須入力です');
-                        return;
-                    }
-                    try {
-                        const docId = 'user_' + userForm.value.id.trim();
-                        const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', docId);
-                        await setDoc(userDocRef, { ...userForm.value, id: userForm.value.id.trim() }, { merge: true });
-                        
-                        await addAuditLog('アカウント登録/変更', `ユーザー [${userForm.value.name} (ID: ${userForm.value.id})] を保存しました。`);
-                        showNotification('アカウント情報を更新しました');
-                        showUserForm.value = false;
-                    } catch (err) {
-                        console.error("Error saving user:", err);
-                        showNotification('アカウント保存に失敗しました');
-                    }
-                };
+                    for (const file of files) {
+                        if (targetItem.surveyDocs.length >= 20) {
+                            this.showToast('1案件につき最大20枚まで登録可能です。');
+                            break;
+                        }
 
-                const deleteUserAccount = async (user) => {
-                    if (user.id === 'admin') {
-                        showNotification('初期管理者アカウントは削除できません');
-                        return;
-                    }
-                    if (confirm(`ユーザー「${user.name}」を削除してもよろしいですか？`)) {
                         try {
-                            const docId = user.docId || ('user_' + user.id);
-                            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', docId));
-                            await addAuditLog('アカウント削除', `ユーザー [${user.name} (ID: ${user.id})] を削除しました。`);
-                            showNotification('アカウントを削除しました');
-                        } catch (err) {
-                            console.error("Error deleting user:", err);
+                            const dataUrl = await this.fileToCompressedDataUrl(file);
+                            targetItem.surveyDocs.push({
+                                id: Date.now() + Math.random().toString(36).substr(2, 7),
+                                name: file.name,
+                                type: file.type,
+                                url: dataUrl,
+                                uploadedAt: new Date().toISOString()
+                            });
+                        } catch (e) {
+                            console.error('ファイル圧縮処理エラー:', e);
                         }
                     }
-                };
 
-                const saveItemToFirestore = async (item) => {
-                    if (!item || !item.id) return;
-                    
-                    // Update local state immediately
-                    const idx = items.value.findIndex(i => i.id === item.id);
-                    if (idx !== -1) {
-                        items.value[idx] = { ...item };
-                    } else {
-                        items.value.push({ ...item });
+                    this.saveData();
+                    this.showToast(`${files.length} 件のファイルを登録・圧縮保存しました`);
+                    event.target.value = '';
+                },
+
+                fileToCompressedDataUrl(file) {
+                    return new Promise((resolve, reject) => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    let width = img.width;
+                                    let height = img.height;
+                                    const maxDim = 1200;
+
+                                    if (width > maxDim || height > maxDim) {
+                                        if (width > height) {
+                                            height = Math.round((height * maxDim) / width);
+                                            width = maxDim;
+                                        } else {
+                                            width = Math.round((width * maxDim) / height);
+                                            height = maxDim;
+                                        }
+                                    }
+
+                                    canvas.width = width;
+                                    canvas.height = height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx.drawImage(img, 0, 0, width, height);
+
+                                    const compressed = canvas.toDataURL('image/jpeg', 0.75);
+                                    resolve(compressed);
+                                };
+                                img.onerror = reject;
+                                img.src = e.target.result;
+                            };
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        } else {
+                            const reader = new FileReader();
+                            reader.onload = (e) => resolve(e.target.result);
+                            reader.onerror = reject;
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                },
+
+                openDocPreview(doc) {
+                    this.previewDocModal = doc;
+                },
+
+                removeFile(item, index) {
+                    item.surveyDocs.splice(index, 1);
+                    this.saveData();
+                    this.showToast('ファイルを削除しました');
+                },
+
+                calculateStatus(item) {
+                    if (item.workCompletedDate) return '完了';
+                    if (item.scheduleNoticeDate) return '作業日時確定';
+                    if (item.productArrangeDate || item.replaceRequestDate) return '置き換え手配済';
+                    if (item.surveyDocs && item.surveyDocs.length > 0) return '資料回収完了';
+                    if (item.surveyDate) return '調査日時確定';
+                    if (item.phonePartner || item.remarks) return '電話対応中';
+                    return '未対応';
+                },
+
+                getStatusBadgeClass(status) {
+                    switch (status) {
+                        case '完了': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                        case '作業日時確定': return 'bg-indigo-100 text-indigo-800 border border-indigo-300';
+                        case '置き換え手配済': return 'bg-purple-100 text-purple-800 border border-purple-300';
+                        case '資料回収完了': return 'bg-blue-100 text-blue-800 border border-blue-300';
+                        case '調査日時確定': return 'bg-amber-100 text-amber-800 border border-amber-300';
+                        case '電話対応中': return 'bg-sky-100 text-sky-800 border border-sky-300';
+                        default: return 'bg-slate-100 text-slate-600 border border-slate-300';
                     }
+                },
 
-                    try {
-                        const itemDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', item.id);
-                        const plainItem = JSON.parse(JSON.stringify(item));
-                        await setDoc(itemDocRef, { ...plainItem, updatedAt: new Date().toISOString() }, { merge: true });
-                        isCloudConnected.value = true;
-                        await addAuditLog('案件データ更新', `NO.${item.no} (${item.storeName || '未命名'}) の情報を更新・保存しました。`);
-                        showNotification('クラウドおよびローカルに保存しました');
-                    } catch (e) {
-                        console.warn("Cloud save error, saved to local state:", e);
-                        showNotification('ローカル状態を更新しました');
-                    }
-                };
+                getStatusCount(statusName) {
+                    return this.items.filter(i => this.calculateStatus(i) === statusName).length;
+                },
 
-                const createNewItem = async () => {
-                    const newNo = (items.value.length + 1).toString();
-                    const newId = 'cust_' + Date.now();
+                getCompletionPercentage() {
+                    if (!this.items.length) return 0;
+                    const completed = this.getStatusCount('完了');
+                    return Math.round((completed / this.items.length) * 100);
+                },
+
+                selectItem(item) {
+                    this.selectedItem = item;
+                },
+
+                createNewItem() {
+                    const newNo = (this.items.length + 1).toString();
                     const newItem = {
-                        id: newId,
+                        id: 'item-' + Date.now(),
                         no: newNo,
                         storeNo: '',
-                        mainPhone: '',
+                        category: '',
                         storeName: '新規店舗 ' + newNo,
                         address1: '',
                         address2: '',
@@ -1535,7 +1245,6 @@
                         mobilePhone: '',
                         operation: '',
                         remarks: '',
-                        category: '',
                         phonePartner: '',
                         surveyAssignee: '',
                         surveyDate: '',
@@ -1544,523 +1253,180 @@
                         productArrangeDate: '',
                         workAssignee: '',
                         scheduleNoticeDate: '',
-                        completionDate: ''
+                        workCompletedDate: ''
                     };
+                    this.items.unshift(newItem);
+                    this.selectedItem = newItem;
+                    this.saveData();
+                    this.showToast('新規案件を作成しました');
+                },
 
-                    await saveItemToFirestore(newItem);
-                    selectedItem.value = newItem;
-                    await addAuditLog('新規案件作成', `NO.${newNo} を新規作成しました。`);
-                    showNotification('新規案件を作成しました');
-                };
+                completeWorkField(item) {
+                    const now = new Date();
+                    const formattedNow = now.toISOString().slice(0, 16);
+                    item.workCompletedDate = formattedNow;
+                    this.saveData();
+                    this.showToast('作業完了報告を登録しました（ステータス: 完了）');
+                },
 
-                const confirmClearAllData = async () => {
-                    if (confirm('本当に全ての案件データを初期化・削除しますか？この操作は取り消せません。')) {
-                        try {
-                            const querySnapshot = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'customers'));
-                            const deletePromises = [];
-                            querySnapshot.forEach((docSnap) => {
-                                deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'customers', docSnap.id)));
-                            });
-                            await Promise.all(deletePromises);
-                            items.value = [];
-                            selectedItem.value = null;
-                            await addAuditLog('全データ削除', '管理者が全顧客データを初期化しました。');
-                            showNotification('全てのデータを削除しました');
-                            showAdminToolModal.value = false;
-                        } catch (err) {
-                            console.error("Clear error:", err);
-                            showNotification('データ削除中にエラーが発生しました');
-                        }
-                    }
-                };
+                formatShortDate(dateStr) {
+                    if (!dateStr) return '';
+                    return dateStr.replace('T', ' ');
+                },
 
-                const handleBulkImport = (event) => {
-                    const inputEl = event.target;
-                    const file = inputEl.files ? inputEl.files[0] : null;
-                    if (!file) return;
-
-                    const fileName = file.name.toLowerCase();
-                    showNotification('ファイルを解析中...');
-
-                    const resetInput = () => {
-                        inputEl.value = '';
-                    };
-
+                async saveData() {
                     try {
-                        if (fileName.endsWith('.csv')) {
-                            if (typeof Papa === 'undefined') {
-                                showNotification('エラー: CSV解析ライブラリ(PapaParse)が読み込まれていません');
-                                resetInput();
-                                return;
-                            }
-                            Papa.parse(file, {
-                                header: true,
-                                skipEmptyLines: 'greedy',
-                                encoding: "UTF-8",
-                                complete: async (results) => {
-                                    try {
-                                        await processImportedRows(results.data);
-                                    } catch (err) {
-                                        console.error("CSV import error:", err);
-                                        showNotification('CSVの取り込み中にエラーが発生しました: ' + err.message);
-                                    } finally {
-                                        resetInput();
-                                    }
-                                },
-                                error: (err) => {
-                                    console.error("PapaParse error:", err);
-                                    showNotification('CSVパースエラー: ' + err.message);
-                                    resetInput();
-                                }
-                            });
-                        } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-                            if (typeof XLSX === 'undefined') {
-                                showNotification('エラー: Excel解析ライブラリ(SheetJS)が読み込まれていません');
-                                resetInput();
-                                return;
-                            }
-                            const reader = new FileReader();
-                            reader.onload = async (e) => {
-                                try {
-                                    const data = new Uint8Array(e.target.result);
-                                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                                    const firstSheetName = workbook.SheetNames[0];
-                                    const worksheet = workbook.Sheets[firstSheetName];
-                                    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                                    await processImportedRows(rows);
-                                } catch (err) {
-                                    console.error("Excel import error:", err);
-                                    showNotification('Excel取り込みエラー: ' + err.message);
-                                } finally {
-                                    resetInput();
-                                }
-                            };
-                            reader.onerror = (err) => {
-                                console.error("FileReader error:", err);
-                                showNotification('ファイル読み込み失敗');
-                                resetInput();
-                            };
-                            reader.readAsArrayBuffer(file);
-                        } else {
-                            showNotification('対応していないファイル形式です (.csv, .xlsx, .xls)');
-                            resetInput();
-                        }
+                        localStorage.setItem('zet_crm_items', JSON.stringify(this.items));
                     } catch (e) {
-                        console.error("Bulk import exception:", e);
-                        showNotification('処理中に予期せぬエラーが発生しました');
-                        resetInput();
-                    }
-                };
-
-                // Helper to safely get row values with key trimming & flexible matching
-                const getRowValue = (row, keys) => {
-                    for (const key of keys) {
-                        for (const rowKey in row) {
-                            if (rowKey.trim() === key || rowKey.trim().includes(key)) {
-                                const val = row[rowKey];
-                                if (val !== undefined && val !== null) {
-                                    return String(val).trim();
-                                }
-                            }
-                        }
-                    }
-                    return '';
-                };
-
-                const processImportedRows = async (rows) => {
-                    if (!rows || rows.length === 0) {
-                        showNotification('有効なデータ列・行が見つかりませんでした');
-                        return;
+                        console.warn('LocalStorage limit:', e);
                     }
 
-                    showNotification(`データ取り込み中... (全 ${rows.length} 件)`);
-
-                    const importedItems = [];
-                    let successCount = 0;
-
-                    for (let idx = 0; idx < rows.length; idx++) {
-                        const row = rows[idx];
-                        
-                        // Robust key matching with priority (prevents single-letter keys like 'N' or 'S' from matching 'No')
-                        const getRowValue = (keys) => {
-                            // 1st Pass: Exact Match First
-                            for (const key of keys) {
-                                for (const rowKey in row) {
-                                    const cleanRowKey = rowKey.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
-                                    const cleanKey = key.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
-                                    if (cleanRowKey === cleanKey) {
-                                        const val = row[rowKey];
-                                        if (val !== undefined && val !== null && val !== '') {
-                                            return String(val).trim();
-                                        }
-                                    }
-                                }
-                            }
-                            // 2nd Pass: Partial Match (Only for keys longer than 1 character to avoid 'No' matching 'n' or 's')
-                            for (const key of keys) {
-                                const cleanKey = key.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
-                                if (cleanKey.length <= 1) continue; // Skip single letter matching in partial search
-
-                                for (const rowKey in row) {
-                                    const cleanRowKey = rowKey.replace(/[\s\(\)（）\-_]/g, '').toLowerCase();
-                                    if (cleanRowKey.includes(cleanKey)) {
-                                        const val = row[rowKey];
-                                        if (val !== undefined && val !== null && val !== '') {
-                                            return String(val).trim();
-                                        }
-                                    }
-                                }
-                            }
-                            return '';
-                        };
-
-                        const noVal = getRowValue(['no', '項番', '番号', 'A']) || String(items.value.length + idx + 1);
-                        const storeNoVal = getRowValue(['店番', '店舗番号', 'storeNo', 'B']);
-                        const mainPhoneVal = getRowValue(['代表番号', '電話番号', 'mainPhone', 'C']);
-                        const storeNameVal = getRowValue(['店名', '店舗名', 'storeName', 'D']);
-                        const address1Val = getRowValue(['店舗住所1', '住所1', 'address1', 'E']);
-                        const address2Val = getRowValue(['店舗住所2', '住所2', 'address2', 'F']);
-                        const buildingVal = getRowValue(['店舗建物名', '建物', 'building', 'G']);
-                        const mobilePhoneVal = getRowValue(['店舗携帯番号', '携帯番号', '携帯', 'mobilePhone', 'H']);
-                        const operationVal = getRowValue(['運営', 'operation', 'I']);
-                        const remarksVal = getRowValue(['備考欄', '備考', 'remarks', 'J']);
-                        const categoryVal = getRowValue(['カテゴリ', 'category', 'K']);
-                        const phonePartnerVal = getRowValue(['電話相手', 'phonePartner', 'L']);
-                        const surveyAssigneeVal = getRowValue(['調査担当', 'surveyAssignee', 'M']);
-                        const surveyDateVal = getRowValue(['調査日', 'surveyDate', 'N']);
-                        const replaceRequestDateVal = getRowValue(['置き換え依頼', 'replaceRequestDate', 'P']);
-                        const productArrangeDateVal = getRowValue(['商品手配', 'productArrangeDate', 'Q']);
-                        const workAssigneeVal = getRowValue(['作業担当', 'workAssignee', 'R']);
-                        const scheduleNoticeDateVal = getRowValue(['日程連絡', 'scheduleNoticeDate', 'S']);
-                        const completionDateVal = getRowValue(['完了', 'completionDate', '完了日', 'T']);
-
-                        if (!storeNameVal && !noVal && !mobilePhoneVal && !storeNoVal && !address1Val) continue;
-
-                        const docId = 'cust_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 4);
-                        const itemData = {
-                            id: docId,
-                            no: noVal,
-                            storeNo: storeNoVal,
-                            mainPhone: mainPhoneVal,
-                            storeName: storeNameVal || '未命名店舗',
-                            address1: address1Val,
-                            address2: address2Val,
-                            building: buildingVal,
-                            mobilePhone: mobilePhoneVal,
-                            operation: operationVal,
-                            remarks: remarksVal,
-                            category: categoryVal,
-                            phonePartner: phonePartnerVal,
-                            surveyAssignee: surveyAssigneeVal,
-                            surveyDate: surveyDateVal,
-                            surveyDocs: [],
-                            replaceRequestDate: replaceRequestDateVal,
-                            productArrangeDate: productArrangeDateVal,
-                            workAssignee: workAssigneeVal,
-                            scheduleNoticeDate: scheduleNoticeDateVal,
-                            completionDate: completionDateVal,
-                            updatedAt: new Date().toISOString()
-                        };
-
-                        importedItems.push(itemData);
-                        successCount++;
-
-                        // Attempt cloud save asynchronously without blocking UI update
+                    // Save to Firestore if available
+                    if (db && auth && auth.currentUser) {
                         try {
-                            const itemDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'customers', docId);
-                            setDoc(itemDocRef, itemData).catch((err) => {
-                                console.warn("Firestore save background notice:", err);
-                            });
-                        } catch (err) {}
-                    }
-
-                    // Directly update local items array so imported rows render immediately
-                    items.value = [...items.value, ...importedItems].sort((a, b) => parseInt(a.no || 0) - parseInt(b.no || 0));
-
-                    if (importedItems.length > 0 && !selectedItem.value) {
-                        selectedItem.value = importedItems[0];
-                    }
-
-                    await addAuditLog('一括インポート', `${successCount} 件のデータをインポートしました`);
-                    showNotification(`${successCount} 件のデータをインポート完了しました！`);
-                    showAdminToolModal.value = false;
-
-                    if (currentTab.value === 'dashboard') {
-                        nextTick(() => initStatusChart());
-                    }
-                };
-
-                // Filtered & Sorted Lists
-                const filteredItems = computed(() => {
-                    return items.value.filter(item => {
-                        const status = calculateStatus(item);
-                        const matchesStatus = filterStatus.value === 'ALL' || status === filterStatus.value;
-                        const query = searchQuery.value.toLowerCase();
-                        const matchesQuery = !query || 
-                            (item.storeName && item.storeName.toLowerCase().includes(query)) ||
-                            (item.no && item.no.toString().includes(query)) ||
-                            (item.mobilePhone && item.mobilePhone.includes(query)) ||
-                            (item.address1 && item.address1.toLowerCase().includes(query));
-                        return matchesStatus && matchesQuery;
-                    });
-                });
-
-                const sortedItems = computed(() => {
-                    return [...filteredItems.value].sort((a, b) => {
-                        let valA = a[sortKey.value] ?? '';
-                        let valB = b[sortKey.value] ?? '';
-
-                        // 数値（NO列・店番列等）の場合は数値ソートを行う
-                        const numA = parseFloat(valA);
-                        const numB = parseFloat(valB);
-                        const isNumA = !isNaN(numA) && String(numA) === String(valA).trim();
-                        const isNumB = !isNaN(numB) && String(numB) === String(valB).trim();
-
-                        if (isNumA && isNumB) {
-                            return sortOrder.value === 'asc' ? numA - numB : numB - numA;
+                            for (const item of this.items) {
+                                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'crm_items', item.id);
+                                await setDoc(docRef, item, { merge: true });
+                            }
+                        } catch (e) {
+                            console.warn('Firestore write warning:', e);
                         }
-
-                        if (typeof valA === 'string') valA = valA.toLowerCase();
-                        if (typeof valB === 'string') valB = valB.toLowerCase();
-
-                        if (valA < valB) return sortOrder.value === 'asc' ? -1 : 1;
-                        if (valA > valB) return sortOrder.value === 'asc' ? 1 : -1;
-                        return 0;
-                    });
-                });
-
-                const sortBy = (key) => {
-                    if (sortKey.value === key) {
-                        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-                    } else {
-                        sortKey.value = key;
-                        sortOrder.value = 'asc';
                     }
-                };
+                },
 
-                const myWorkItems = computed(() => {
-                    return items.value.filter(item => item.workAssignee === currentWorker.value || item.surveyAssignee === currentWorker.value);
-                });
-
-                const getStatusCount = (statusName) => {
-                    return items.value.filter(item => calculateStatus(item) === statusName).length;
-                };
-
-                const getStatusBadgeClass = (status) => {
-                    switch (status) {
-                        case '完了': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
-                        case '作業日時確定': return 'bg-purple-100 text-purple-800 border border-purple-200';
-                        case '置き換え手配済': return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
-                        case '資料回収完了': return 'bg-cyan-100 text-cyan-800 border border-cyan-200';
-                        case '調査日時確定': return 'bg-blue-100 text-blue-800 border border-blue-200';
-                        case '電話対応中': return 'bg-amber-100 text-amber-800 border border-amber-200';
-                        default: return 'bg-slate-100 text-slate-600 border border-slate-200';
+                loadLocalData() {
+                    const saved = localStorage.getItem('zet_crm_items');
+                    if (saved) {
+                        try {
+                            this.items = JSON.parse(saved);
+                        } catch (e) {
+                            console.error('Data parse error:', e);
+                        }
                     }
-                };
+                },
 
-                const selectItem = (item) => {
-                    selectedItem.value = item;
-                };
-
-                const toggleCompletion = async (item) => {
-                    if (item.completionDate) {
-                        item.completionDate = '';
-                        showNotification('作業完了を解除しました');
-                    } else {
-                        item.completionDate = new Date().toISOString().slice(0, 16);
-                        showNotification('作業完了に設定しました');
-                    }
-                    await saveItemToFirestore(item);
-                };
-
-                // Up to 20 Files Upload Handler
-                const handleFileUpload = async (event, targetItem) => {
-                    const files = Array.from(event.target.files);
-                    if (!files.length || !targetItem) return;
-
-                    if (!targetItem.surveyDocs) {
-                        targetItem.surveyDocs = [];
-                    }
-
-                    if (targetItem.surveyDocs.length + files.length > 20) {
-                        showNotification('ファイル添付は最大20枚までです');
-                        return;
-                    }
-
-                    files.forEach(file => {
-                        targetItem.surveyDocs.push({
-                            name: file.name,
-                            url: URL.createObjectURL(file)
-                        });
-                    });
-
-                    await saveItemToFirestore(targetItem);
-                    showNotification(`${files.length} 件のファイルを添付保存しました`);
-                };
-
-                const removeFile = async (targetItem, index) => {
-                    if (targetItem && targetItem.surveyDocs) {
-                        targetItem.surveyDocs.splice(index, 1);
-                        await saveItemToFirestore(targetItem);
-                        showNotification('ファイルを削除しました');
-                    }
-                };
-
-                const getWorkerStats = (worker) => {
-                    const workerItems = items.value.filter(i => i.workAssignee === worker);
-                    const total = workerItems.length;
-                    const completed = workerItems.filter(i => i.completionDate).length;
-                    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-                    return { total, completed, percent };
-                };
-
-                const initStatusChart = () => {
+                renderChart() {
                     const ctx = document.getElementById('statusChart');
                     if (!ctx) return;
 
-                    if (chartInstance) chartInstance.destroy();
-
                     const statuses = ['未対応', '電話対応中', '調査日時確定', '資料回収完了', '置き換え手配済', '作業日時確定', '完了'];
-                    const counts = statuses.map(s => getStatusCount(s));
+                    const dataCounts = statuses.map(s => this.getStatusCount(s));
 
-                    chartInstance = new Chart(ctx, {
+                    if (this.chartInstance) {
+                        this.chartInstance.destroy();
+                    }
+
+                    this.chartInstance = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
                             labels: statuses,
                             datasets: [{
-                                data: counts,
+                                data: dataCounts,
                                 backgroundColor: [
-                                    '#cbd5e1', '#f59e0b', '#3b82f6', '#06b6d4', '#6366f1', '#a855f7', '#10b981'
-                                ],
-                                borderWidth: 2,
-                                borderColor: '#ffffff'
+                                    '#cbd5e1', '#38bdf8', '#fbbf24', '#60a5fa', '#a855f7', '#6366f1', '#10b981'
+                                ]
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
-                                legend: {
-                                    position: 'right',
-                                    labels: { font: { size: 11 } }
-                                }
+                                legend: { display: false }
                             }
                         }
                     });
-                };
+                },
 
-                // Excel (.xlsx) Export
-                const exportExcel = () => {
-                    const exportData = sortedItems.value.map(item => ({
-                        'NO (A)': item.no,
-                        '店番 (B)': item.storeNo,
-                        '代表番号 (C)': item.mainPhone,
-                        '店名 (D)': item.storeName,
-                        '店舗住所1 (E)': item.address1,
-                        '店舗住所2 (F)': item.address2,
-                        '店舗建物名 (G)': item.building,
-                        '店舗携帯番号 (H)': item.mobilePhone,
-                        '運営 (I)': item.operation,
-                        '備考欄 (J)': item.remarks,
-                        'カテゴリ (K)': item.category,
-                        '電話相手 (L)': item.phonePartner,
-                        '調査担当 (M)': item.surveyAssignee,
-                        '調査日 (N)': isValidDate(item.surveyDate) ? item.surveyDate : '',
-                        '調査資料回収(枚数) (O)': (item.surveyDocs || []).length,
-                        '置き換え依頼 (P)': isValidDate(item.replaceRequestDate) ? item.replaceRequestDate : '',
-                        '商品手配 (Q)': isValidDate(item.productArrangeDate) ? item.productArrangeDate : '',
-                        '作業担当 (R)': item.workAssignee,
-                        '日程連絡 (S)': isValidDate(item.scheduleNoticeDate) ? item.scheduleNoticeDate : '',
-                        '完了 (T)': isValidDate(item.completionDate) ? item.completionDate : '',
-                        'ステータス': calculateStatus(item)
+                handleImportExcelCsv(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[firstSheetName];
+                        const json = XLSX.utils.sheet_to_json(worksheet);
+
+                        if (json && json.length > 0) {
+                            this.items = json.map((row, idx) => ({
+                                id: 'imported-' + idx + '-' + Date.now(),
+                                no: row['NO'] || row['no'] || (idx + 1).toString(),
+                                storeNo: row['店番'] || '',
+                                category: row['カテゴリ'] || '',
+                                storeName: row['店名'] || row['店舗名'] || '',
+                                address1: row['住所1'] || row['住所'] || '',
+                                address2: row['住所2'] || '',
+                                building: row['建物名'] || '',
+                                mobilePhone: row['携帯番号'] || row['電話番号'] || '',
+                                operation: row['運営'] || '',
+                                remarks: row['備考'] || row['備考欄'] || '',
+                                phonePartner: row['電話相手'] || '',
+                                surveyAssignee: row['調査担当'] || '',
+                                surveyDate: row['調査日'] || row['調査日時'] || '',
+                                surveyDocs: [],
+                                replaceRequestDate: row['置き換え依頼'] || '',
+                                productArrangeDate: row['商品手配'] || '',
+                                workAssignee: row['作業担当'] || '',
+                                scheduleNoticeDate: row['日程連絡'] || '',
+                                workCompletedDate: row['作業完了'] || ''
+                            }));
+                            this.saveData();
+                            if (this.items.length > 0) this.selectedItem = this.items[0];
+                            this.showToast(`${this.items.length} 件のデータをインポートしました`);
+                            this.showAdminToolModal = false;
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                },
+
+                exportToExcel() {
+                    const exportData = this.items.map(item => ({
+                        'NO': item.no,
+                        '店番': item.storeNo,
+                        'カテゴリ': item.category,
+                        '店名': item.storeName,
+                        '住所1': item.address1,
+                        '住所2': item.address2,
+                        '建物名': item.building,
+                        '携帯番号': item.mobilePhone,
+                        '運営': item.operation,
+                        '備考': item.remarks,
+                        '電話相手': item.phonePartner,
+                        '調査担当': item.surveyAssignee,
+                        '調査日': item.surveyDate,
+                        '置き換え依頼': item.replaceRequestDate,
+                        '商品手配': item.productArrangeDate,
+                        '作業担当': item.workAssignee,
+                        '日程連絡': item.scheduleNoticeDate,
+                        '作業完了': item.workCompletedDate,
+                        'ステータス': this.calculateStatus(item)
                     }));
 
                     const worksheet = XLSX.utils.json_to_sheet(exportData);
                     const workbook = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(workbook, worksheet, "顧客工程進捗一覧");
+                    XLSX.utils.book_append_sheet(workbook, worksheet, '案件一覧');
+                    XLSX.writeFile(workbook, `ZET_CRM_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    this.showToast('Excelファイルをダウンロードしました');
+                },
 
-                    XLSX.writeFile(workbook, `顧客工程進捗データ_${new Date().toISOString().slice(0, 10)}.xlsx`);
-                    showNotification('Excel (.xlsx) ファイルを出力しました');
-                };
+                triggerResetConfirm() {
+                    this.confirmDialog = {
+                        show: true,
+                        title: '全データのリセット',
+                        message: '登録済みの全ての案件データおよびファイルが削除され初期化されます。よろしいですか？',
+                        action: 'reset'
+                    };
+                },
 
-                const formatShortDate = (dt) => {
-                    if (!dt || !isValidDate(dt)) return '-';
-                    return String(dt).replace('T', ' ');
-                };
-
-                const showNotification = (msg) => {
-                    toastMessage.value = msg;
-                    setTimeout(() => {
-                        toastMessage.value = '';
-                    }, 3000);
-                };
-
-                watch(currentTab, (newTab) => {
-                    if (newTab === 'dashboard') {
-                        nextTick(() => initStatusChart());
+                executeConfirmAction() {
+                    if (this.confirmDialog.action === 'reset') {
+                        localStorage.removeItem('zet_crm_items');
+                        location.reload();
                     }
-                    nextTick(() => renderIcons());
-                });
-
-                watch(adminTab, () => {
-                    nextTick(() => renderIcons());
-                });
-
-                onMounted(() => {
-                    initFirestoreSync();
-                    nextTick(() => renderIcons());
-                });
-
-                return {
-                    isLoggedIn,
-                    isCloudConnected,
-                    currentUser,
-                    loginForm,
-                    loginError,
-                    currentTab,
-                    adminTab,
-                    showAdminToolModal,
-                    showUserForm,
-                    editingUserIsNew,
-                    userForm,
-                    usersList,
-                    logsList,
-                    searchQuery,
-                    filterStatus,
-                    items,
-                    selectedItem,
-                    filteredItems,
-                    sortedItems,
-                    sortKey,
-                    sortOrder,
-                    myWorkItems,
-                    currentWorker,
-                    workerList,
-                    toastMessage,
-                    handleLogin,
-                    handleLogout,
-                    getRoleLabel,
-                    canAccessTab,
-                    calculateStatus,
-                    getStatusCount,
-                    getStatusBadgeClass,
-                    selectItem,
-                    sortBy,
-                    toggleCompletion,
-                    handleFileUpload,
-                    removeFile,
-                    getWorkerStats,
-                    openUserEditModal,
-                    saveUserAccount,
-                    deleteUserAccount,
-                    saveItemToFirestore,
-                    createNewItem,
-                    handleBulkImport,
-                    confirmClearAllData,
-                    exportExcel,
-                    formatShortDate,
-                    showNotification
-                };
+                    this.confirmDialog.show = false;
+                }
             }
         }).mount('#app');
     </script>
